@@ -1,7 +1,9 @@
 # FoxyClient PHP Example
 An example implementation of the FoxyClient for PHP
 
-Please see <a href="https://api.foxycart.com/docs">the documentation</a> for more information.
+Please see <a href="https://api.foxycart.com/docs">the Foxy Hypermedia API documentation</a> for more information.
+
+This is an example usage of <a href="https://github.com/FoxyCart/foxyclient-php">FoxyClient PHP</a>.
 
 ## Installation
 Assume you're going to make the world a better place by improving software and fork the <a href="https://github.com/FoxyCart/foxyclient-php-example">foxyclient-php-example</a> repo.
@@ -34,7 +36,7 @@ This example currently demonstrates how to:
  - Check if a Foxy store exists.
  - Create a Foxy store.
 
- It also simplifies OAuth Interactions:
+It also simplifies OAuth Interactions:
  - Authenticate client
  - Client Credentials grant (in case you forget your client_full_access refresh token)
  - Authorization Code grant (to get access to a user or store)
