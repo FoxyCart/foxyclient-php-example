@@ -29,44 +29,6 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
     <div class="container">
 <?php
 
-// update our session/client if needed.
-// NOTE: This example uses the session, but you could also be using a database or some other persistance layer.
-if (isset($_SESSION['access_token']) && $fc->getAccessToken() != $_SESSION['access_token']) {
-    if ($fc->getAccessToken() == '') {
-        $fc->setAccessToken($_SESSION['access_token']);
-    } else {
-        $_SESSION['access_token'] = $fc->getAccessToken();
-    }
-}
-if (isset($_SESSION['refresh_token']) && $fc->getRefreshToken() != $_SESSION['refresh_token']) {
-    if ($fc->getRefreshToken() == '') {
-        $fc->setRefreshToken($_SESSION['refresh_token']);
-    } else {
-        $_SESSION['refresh_token'] = $fc->getRefreshToken();
-    }
-}
-if (isset($_SESSION['client_id']) && $fc->getClientId() != $_SESSION['client_id']) {
-    if ($fc->getClientId() == '') {
-        $fc->setClientId($_SESSION['client_id']);
-    } else {
-        $_SESSION['client_id'] = $fc->getClientId();
-    }
-}
-if (isset($_SESSION['client_secret']) && $fc->getClientSecret() != $_SESSION['client_secret']) {
-    if ($fc->getClientSecret() == '') {
-        $fc->setClientSecret($_SESSION['client_secret']);
-    } else {
-        $_SESSION['client_secret'] = $fc->getClientSecret();
-    }
-}
-if (isset($_SESSION['token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['token_expires']) {
-    if ($fc->getAccessTokenExpires() == '') {
-        $fc->setAccessTokenExpires($_SESSION['token_expires']);
-    } else {
-        $_SESSION['token_expires'] = $fc->getAccessTokenExpires();
-    }
-}
-
 // BEGIN HERE
 if ($action == '') {
 ?>
@@ -173,6 +135,7 @@ if ($action == 'register_client') {
     <h2>Client Registered</h2>
     <h3>Code:</h3>
     <pre>
+    $fc->clearCredentials();
     $fc->get();
     $create_client_uri = $fc->getLink('fx:create_client');
     $data = array(
@@ -198,12 +161,7 @@ if ($action == 'register_client') {
     </pre>
     <h3>Result:</h3>
     <?php
-    $fc->setClientId($data['client_id']);
-    $fc->setClientSecret($data['client_secret']);
-    $fc->setAccessToken($data['access_token']);
-    $fc->setRefreshToken($data['refresh_token']);
-    $fc->setAccessTokenExpires($data['token_expires']);
-
+    $fc->clearCredentials();
     $fc->get();
     $create_client_uri = $fc->getLink('fx:create_client');
     $data = array(
@@ -250,7 +208,19 @@ if ($action == 'authenticate_client_form') {
     <h2>Authenticate your OAuth Client</h2>
     <form role="form" action="/?action=authenticate_client" method="post" class="form-horizontal">
         <div class="form-group">
-            <label for="access_token" class="col-sm-2 control-label">Access Token<span class="text-danger">*</span></label>
+            <label for="client_id" class="col-sm-2 control-label">Client ID<span class="text-danger">*</span></label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control" id="client_id" name="client_id" maxlength="50" value="<?php echo isset($_POST['client_id']) ? htmlspecialchars($_POST['client_id']) : ""; ?>">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="client_secret" class="col-sm-2 control-label">Client Secret<span class="text-danger">*</span></label>
+            <div class="col-sm-3">
+                <input type="text" class="form-control" id="client_secret" name="client_secret" maxlength="50" value="<?php echo isset($_POST['client_secret']) ? htmlspecialchars($_POST['client_secret']) : ""; ?>">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="access_token" class="col-sm-2 control-label">Access Token</label>
             <div class="col-sm-3">
                 <input type="text" class="form-control" id="access_token" name="access_token" maxlength="50" value="<?php echo isset($_POST['access_token']) ? htmlspecialchars($_POST['access_token']) : ""; ?>">
             </div>
@@ -265,18 +235,6 @@ if ($action == 'authenticate_client_form') {
             <label for="token_expires" class="col-sm-2 control-label">Token Expires</label>
             <div class="col-sm-3">
                 <input type="text" class="form-control" id="token_expires" name="token_expires" maxlength="50" value="<?php echo isset($_POST['token_expires']) ? htmlspecialchars($_POST['token_expires']) : ""; ?>">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="client_id" class="col-sm-2 control-label">Client ID<span class="text-danger">*</span></label>
-            <div class="col-sm-3">
-                <input type="text" class="form-control" id="client_id" name="client_id" maxlength="50" value="<?php echo isset($_POST['client_id']) ? htmlspecialchars($_POST['client_id']) : ""; ?>">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="client_secret" class="col-sm-2 control-label">Client Secret<span class="text-danger">*</span></label>
-            <div class="col-sm-3">
-                <input type="text" class="form-control" id="client_secret" name="client_secret" maxlength="50" value="<?php echo isset($_POST['client_secret']) ? htmlspecialchars($_POST['client_secret']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -297,11 +255,7 @@ if ($action == 'authenticate_client') {
         'client_id' => $_POST['client_id'],
         'client_secret' => $_POST['client_secret'],
     );
-    $fc->setClientId($data['client_id']);
-    $fc->setClientSecret($data['client_secret']);
-    $fc->setAccessToken($data['access_token']);
-    $fc->setRefreshToken($data['refresh_token']);
-    $fc->setAccessTokenExpires($data['token_expires']);
+    $fc->updateFromConfig($data);
     $result = $fc->get();
     print_r($result);
     </pre>
@@ -319,11 +273,7 @@ if ($action == 'authenticate_client') {
     $_SESSION['access_token'] = $data['access_token'];
     $_SESSION['refresh_token'] = $data['refresh_token'];
     $_SESSION['token_expires'] = $data['token_expires'];
-    $fc->setClientId($_SESSION['client_id']);
-    $fc->setClientSecret($_SESSION['client_secret']);
-    $fc->setAccessToken($_SESSION['access_token']);
-    $fc->setRefreshToken($_SESSION['refresh_token']);
-    $fc->setAccessTokenExpires($_SESSION['token_expires']);
+    $fc->updateFromConfig($data);
     $result = $fc->get();
     ?>
     <pre><?php print_r($result); ?></pre>
@@ -510,12 +460,45 @@ if ($action == 'check_store_exists') {
 
 if ($action == 'logout') {
     session_destroy();
-    $fc->setClientId('');
-    $fc->setClientSecret('');
-    $fc->setAccessToken('');
-    $fc->setRefreshToken('');
-    $fc->setAccessTokenExpires('');
+    $fc->clearCredentials();
     print '<h1>You are Logged out</h1>';
+    print '<br /><a href="?action=">Home</a>';
+}
+
+
+// update our session/client if needed.
+// NOTE: This example uses the session, but you could also be using a database or some other persistance layer.
+if (isset($_SESSION['access_token']) && $fc->getAccessToken() != $_SESSION['access_token']) {
+    if ($fc->getAccessToken() == '') {
+        $fc->setAccessToken($_SESSION['access_token']);
+    } else {
+        // This can happen after a token refresh.
+        $_SESSION['access_token'] = $fc->getAccessToken();
+    }
+}
+if (isset($_SESSION['refresh_token']) && $fc->getRefreshToken() != $_SESSION['refresh_token']) {
+    if ($fc->getRefreshToken() == '') {
+        $fc->setRefreshToken($_SESSION['refresh_token']);
+    }
+}
+if (isset($_SESSION['client_id']) && $fc->getClientId() != $_SESSION['client_id']) {
+    if ($fc->getClientId() == '') {
+        $fc->setClientId($_SESSION['client_id']);
+    }
+}
+if (isset($_SESSION['client_secret']) && $fc->getClientSecret() != $_SESSION['client_secret']) {
+    if ($fc->getClientSecret() == '') {
+        $fc->setClientSecret($_SESSION['client_secret']);
+    }
+}
+if (isset($_SESSION['token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['token_expires']) {
+    if ($fc->getAccessTokenExpires() == '') {
+        $fc->setAccessTokenExpires($_SESSION['token_expires']);
+    } else {
+        // This can happen after a token refresh.
+        $_SESSION['token_expires'] = $fc->getAccessTokenExpires();
+    }
+
 }
 
 if ($action != 'logout' && $fc->getAccessToken() != '') {
@@ -524,7 +507,7 @@ if ($action != 'logout' && $fc->getAccessToken() != '') {
     print '<li>client_id: ' . $fc->getClientId() . '</li>';
     print '<li>client_secret: (view source) <!--' . $fc->getClientSecret() . '--></li>';
     print '<li>access_token: ' . $fc->getAccessToken() . '</li>';
-    print '<li>refresh_token: ' . $fc->getRefreshToken() . '</li>';
+    print '<li>refresh_token: (view source) <!--' . $fc->getRefreshToken() . '--></li>';
     if ($fc->getAccessTokenExpires() != '') {
         print '<li>token_expires: ' . $fc->getAccessTokenExpires() . '</li>';
         print '<li>now: ' . time() . '</li>';
