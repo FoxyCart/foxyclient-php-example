@@ -1,11 +1,36 @@
-# foxyclient-example
-An example implementation of the FoxyClient
+# foxyclient-php-example
+An example implementation of the FoxyClient for PHP
 
-Install Composer:
+Please see <a href="https://api.foxycart.com/docs">the documentation</a> for more information.
+
+## Installation
+Assume you're going to make the world a better place by improving software and fork the <a href="https://github.com/FoxyCart/foxyclient-php-example">foxyclient-php-example</a> repo.
+
+Clone the forked repo on your computer:
+
+`cd <where you want the foxyclient-php-example folder to live>`
+
+`git clone git@github.com:<yourgithub-user-name>/foxyclient-php-example.git`
+
+`cd foxyclient-php-example`
+
+Install and run <a href="https://getcomposer.org/">composer</a>
+
 `php composer.phar install`
 
-Start up a local web server:
+## Usage
+
+Start up a local PHP web server:
+
 `php -S localhost:8000`
 
-Load it in your browser and follow along in the code:
-http://localhost:8000
+Load it up in your browser and follow along in the code:
+<a href="http://localhost:8000">http://localhost:8000</a>
+
+This example currently demonstrates how to:
+ - Register your application by creating an OAuth client.
+ - Authenticate a client.
+ - Check if a Foxy user exists.
+ - Create a Foxy user.
+ - Check if a Foxy store exists.
+ - Create a Foxy store.

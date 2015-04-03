@@ -4,7 +4,7 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "cbb540ee008b5828c7d82a4015bd13ee",
+    "hash": "4bad3db83a2e68f8bd286cb7a4abc68e",
     "packages": [
         {
             "name": "doctrine/cache",
@@ -81,7 +81,7 @@
             "version": "0.1.0",
             "source": {
                 "type": "git",
-                "url": "git@github.com:FoxyCart/foxyclient.git",
+                "url": "git@github.com:FoxyCart/foxyclient-php.git",
                 "reference": "master"
             },
             "require": {
@@ -96,7 +96,7 @@
                 }
             },
             "description": "FoxyClient - a PHP Guzzle based API Client for working with the Foxy Hypermedia API ",
-            "homepage": "https://github.com/FoxyCart/foxyclient"
+            "homepage": "https://github.com/FoxyCart/foxyclient-php"
         },
         {
             "name": "guzzlehttp/cache-subscriber",
