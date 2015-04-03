@@ -26,6 +26,9 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
       <li><a target="_blank" href="https://api<?php print ($fc->getUseSandbox() ? '-sandbox' : ''); ?>.foxycart.com/hal-browser/browser.html">HAL Browser</a></li>
       <li><a href="/?action=logout">Logout</a></li>
     </ul>
+    <ul class="nav navbar-nav navbar-right">
+       <li><p class="navbar-text"><?php print ($fc->getUseSandbox() ? '<span class="text-success">SANDBOX</span>' : '<span class="text-danger">PRODUCTION</span>'); ?></p></li>
+    </ul>
   </div>
 </nav>
     <div class="container">
@@ -70,12 +73,16 @@ if ($action == '') {
         This exmaple will walk through using FoxyClient.php to:
         <ol>
             <li><a href="/?action=register_client_form">Register your application</a> by creating an OAuth client</li>
-            <li><a href="/?action=authenticate_client_form">Authenticate</a> client</li>
             <li><a href="/?action=check_user_exists_form">Check if a Foxy user exists</a></li>
             <li><a href="/?action=create_user_form">Create a Foxy user</a></li>
             <li><a href="/?action=check_store_exists_form">Check if a Foxy store exists</a></li>
             <li><a href="/?action=create_store_form">Create a Foxy store</a></li>
-            <li>OAuth Authorization Code grant</li>
+        </ol>
+        OAuth Interactions:
+        <ol>
+            <li><a href="/?action=authenticate_client_form">Authenticate</a> client</li>
+            <li><a href="/?action=client_credentials_grant">OAuth Client Credentials grant</a></li>
+            <li><a href="/?action=authorization_code_grant_form">OAuth Authorization Code grant</a></li>
         </ol>
     </p>
     <?php
@@ -101,7 +108,8 @@ if ($action == 'register_client') {
     <?php
     $errors = array();
     $fc->clearCredentials();
-    $fc->get();
+    $result = $fc->get();
+    $errors = array_merge($errors,$fc->getErrors($result));
     $create_client_uri = $fc->getLink('fx:create_client');
     if ($create_client_uri == '') {
         $errors[] = 'Unable to obtain fx:create_client href';
@@ -135,7 +143,7 @@ if ($action == 'register_client') {
         $errors = array_merge($errors,$fc->getErrors($result));
         if (!count($errors)) {
             ?>
-            <h3><?php print $result['message']; ?></h3>
+            <h3 class="alert alert-success" role="alert"><?php print $result['message']; ?></h3>
             <pre><?php print_r($result['token']); ?></pre>
             <?php
             $_SESSION['access_token'] = $result['token']['access_token'];
@@ -159,7 +167,7 @@ if ($action == 'register_client') {
                     $fc->setClientId($_SESSION['client_id']);
                     $fc->setClientSecret($_SESSION['client_secret']);
                     ?>
-                    <h3>Client Registered</h3>
+                    <h3 class="alert alert-success" role="alert">Client Registered</h3>
                     <h3>Result:</h3>
                     <pre><?php print_r($result); ?></pre>
                     <?php
@@ -169,18 +177,18 @@ if ($action == 'register_client') {
     }
     if (count($errors)) {
         $action = 'register_client_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
 }
 
-
 if ($action == 'register_client_form') {
     $redirect_uri = 'http' . (($_SERVER['SERVER_PORT'] == 443) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
-    $redirect_uri .= "?action=oauth_code_grant";
+    $redirect_uri .= "?action=authorization_code_grant";
     if (isset($_POST['redirect_uri'])) {
         $redirect_uri = htmlspecialchars($_POST['redirect_uri']);
     }
@@ -191,60 +199,60 @@ if ($action == 'register_client_form') {
         <div class="form-group">
             <label for="project_name" class="col-sm-2 control-label">Project Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="project_name" name="project_name" maxlength="50" value="<?php echo isset($_POST['project_name']) ? htmlspecialchars($_POST['project_name']) : ""; ?>">
+                <input type="text" class="form-control" id="project_name" name="project_name" maxlength="200" value="<?php echo isset($_POST['project_name']) ? htmlspecialchars($_POST['project_name']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="project_description" class="col-sm-2 control-label">Project Description</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="project_description" name="project_description" maxlength="50" value="<?php echo isset($_POST['project_description']) ? htmlspecialchars($_POST['project_description']) : ""; ?>">
+                <input type="text" class="form-control" id="project_description" name="project_description" maxlength="200" value="<?php echo isset($_POST['project_description']) ? htmlspecialchars($_POST['project_description']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="company_name" class="col-sm-2 control-label">Company Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="company_name" name="company_name" maxlength="50" value="<?php echo isset($_POST['company_name']) ? htmlspecialchars($_POST['company_name']) : ""; ?>">
+                <input type="text" class="form-control" id="company_name" name="company_name" maxlength="200" value="<?php echo isset($_POST['company_name']) ? htmlspecialchars($_POST['company_name']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="company_url" class="col-sm-2 control-label">Company URL</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="company_url" name="company_url" maxlength="50" value="<?php echo isset($_POST['company_url']) ? htmlspecialchars($_POST['company_url']) : ""; ?>">
+                <input type="text" class="form-control" id="company_url" name="company_url" maxlength="200" value="<?php echo isset($_POST['company_url']) ? htmlspecialchars($_POST['company_url']) : ""; ?>">
             </div>
         </div>
 
         <div class="form-group">
             <label for="company_logo" class="col-sm-2 control-label">Company Logo</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="company_logo" name="company_logo" maxlength="50" value="<?php echo isset($_POST['company_logo']) ? htmlspecialchars($_POST['company_logo']) : ""; ?>">
+                <input type="text" class="form-control" id="company_logo" name="company_logo" maxlength="200" value="<?php echo isset($_POST['company_logo']) ? htmlspecialchars($_POST['company_logo']) : ""; ?>">
             </div>
         </div>
 
         <div class="form-group">
             <label for="contact_name" class="col-sm-2 control-label">Contact Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="contact_name" name="contact_name" maxlength="50" value="<?php echo isset($_POST['contact_name']) ? htmlspecialchars($_POST['contact_name']) : ""; ?>">
+                <input type="text" class="form-control" id="contact_name" name="contact_name" maxlength="200" value="<?php echo isset($_POST['contact_name']) ? htmlspecialchars($_POST['contact_name']) : ""; ?>">
             </div>
         </div>
 
         <div class="form-group">
             <label for="contact_email" class="col-sm-2 control-label">Contact Email<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="email" class="form-control" id="contact_email" name="contact_email" maxlength="50" value="<?php echo isset($_POST['contact_email']) ? htmlspecialchars($_POST['contact_email']) : ""; ?>">
+                <input type="email" class="form-control" id="contact_email" name="contact_email" maxlength="200" value="<?php echo isset($_POST['contact_email']) ? htmlspecialchars($_POST['contact_email']) : ""; ?>">
             </div>
         </div>
 
         <div class="form-group">
             <label for="contact_phone" class="col-sm-2 control-label">Contact Phone<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="contact_phone" name="contact_phone" maxlength="50" value="<?php echo isset($_POST['contact_phone']) ? htmlspecialchars($_POST['contact_phone']) : ""; ?>">
+                <input type="text" class="form-control" id="contact_phone" name="contact_phone" maxlength="200" value="<?php echo isset($_POST['contact_phone']) ? htmlspecialchars($_POST['contact_phone']) : ""; ?>">
             </div>
         </div>
 
         <div class="form-group">
             <label for="redirect_uri" class="col-sm-2 control-label">Redirect URI<span class="text-danger">*</span></label>
             <div class="col-sm-5">
-                <input type="text" class="form-control" id="redirect_uri" name="redirect_uri" maxlength="50" value="<?php echo $redirect_uri; ?>">
+                <input type="text" class="form-control" id="redirect_uri" name="redirect_uri" maxlength="200" value="<?php echo $redirect_uri; ?>">
                 <small class="muted">Put your application's OAuth Code Grant endpoint here.</small>
             </div>
         </div>
@@ -252,7 +260,7 @@ if ($action == 'register_client_form') {
         <div class="form-group">
             <label for="javascript_origin_uri" class="col-sm-2 control-label">Javascript Origin URI</label>
             <div class="col-sm-5">
-                <input type="text" class="form-control" id="javascript_origin_uri" name="javascript_origin_uri" maxlength="50" value="<?php echo isset($_POST['javascript_origin_uri']) ? htmlspecialchars($_POST['javascript_origin_uri']) : ""; ?>">
+                <input type="text" class="form-control" id="javascript_origin_uri" name="javascript_origin_uri" maxlength="200" value="<?php echo isset($_POST['javascript_origin_uri']) ? htmlspecialchars($_POST['javascript_origin_uri']) : ""; ?>">
                 <small class="muted">This is used by public OAuth clients (like a mobile browser only app where you can't secure the credentials).</small>
             </div>
         </div>
@@ -302,7 +310,7 @@ if ($action == 'authenticate_client') {
             $_SESSION['refresh_token'] = $data['refresh_token'];
             $_SESSION['access_token_expires'] = $data['access_token_expires'];
             ?>
-            <h3>Client Authenticated</h3>
+            <h3 class="alert alert-success" role="alert">Client Authenticated</h3>
             <h3>Result:</h3>
             <pre><?php print_r($result); ?></pre>
             <?php
@@ -314,13 +322,15 @@ if ($action == 'authenticate_client') {
     }
     if (count($errors)) {
         $action = 'authenticate_client_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
 }
+
 
 if ($action == 'authenticate_client_form') {
     ?>
@@ -329,37 +339,137 @@ if ($action == 'authenticate_client_form') {
         <div class="form-group">
             <label for="client_id" class="col-sm-2 control-label">Client ID<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="client_id" name="client_id" maxlength="50" value="<?php echo isset($_POST['client_id']) ? htmlspecialchars($_POST['client_id']) : ""; ?>">
+                <input type="text" class="form-control" id="client_id" name="client_id" maxlength="200" value="<?php echo isset($_POST['client_id']) ? htmlspecialchars($_POST['client_id']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="client_secret" class="col-sm-2 control-label">Client Secret<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="client_secret" name="client_secret" maxlength="50" value="<?php echo isset($_POST['client_secret']) ? htmlspecialchars($_POST['client_secret']) : ""; ?>">
+                <input type="text" class="form-control" id="client_secret" name="client_secret" maxlength="200" value="<?php echo isset($_POST['client_secret']) ? htmlspecialchars($_POST['client_secret']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="access_token" class="col-sm-2 control-label">Access Token</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="access_token" name="access_token" maxlength="50" value="<?php echo isset($_POST['access_token']) ? htmlspecialchars($_POST['access_token']) : ""; ?>">
+                <input type="text" class="form-control" id="access_token" name="access_token" maxlength="200" value="<?php echo isset($_POST['access_token']) ? htmlspecialchars($_POST['access_token']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="access_token" class="col-sm-2 control-label">Refresh Token<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="access_token" name="refresh_token" maxlength="50" value="<?php echo isset($_POST['refresh_token']) ? htmlspecialchars($_POST['refresh_token']) : ""; ?>">
+                <input type="text" class="form-control" id="access_token" name="refresh_token" maxlength="200" value="<?php echo isset($_POST['refresh_token']) ? htmlspecialchars($_POST['refresh_token']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="access_token_expires" class="col-sm-2 control-label">Token Expires</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="access_token_expires" name="access_token_expires" maxlength="50" value="<?php echo isset($_POST['access_token_expires']) ? htmlspecialchars($_POST['access_token_expires']) : ""; ?>">
+                <input type="text" class="form-control" id="access_token_expires" name="access_token_expires" maxlength="200" value="<?php echo isset($_POST['access_token_expires']) ? htmlspecialchars($_POST['access_token_expires']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Authenticate Client</button>
     </form>
-<?php
+    <?php
+}
+
+if ($action == 'authorization_code_grant_form') {
+    ?>
+    <h2>Authorize Your Application</h2>
+    <form role="form" action="<?php print $fc->getAuthorizationEndpoint(); ?>" method="GET" class="form-horizontal">
+        <input type="hidden" name="state" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="response_type" value="code" />
+        <input type="hidden" name="client_id" value="<?php print $fc->getClientId(); ?>" />
+        <div class="form-group">
+            <label for="client_id" class="col-sm-2 control-label">Scope<span class="text-danger">*</span></label>
+            <div class="col-sm-3">
+                <select name="scope" class="form-control">
+                    <option value="store_full_access">store_full_access</option>
+                    <option value="user_full_access">user_full_access</option>
+                </select>
+            </div>
+        </div>
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <button type="submit" class="btn btn-primary">Authorize Application</button>
+    </form>
+    <?php
+}
+
+if ($action == 'authorization_code_grant') {
+    ?>
+    <h2>OAuth Authorization Code grant</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Request an access_token via Client Credentials grant <code>$fc->getAccessTokenFromClientCredentials();</code>.</li>
+        <li>Check for errors.</li>
+        <li>Update FoxyClient access_token <code>$fc->setAccessToken($access_token);</code>.</li>
+        <li>Get the homepage <code>$fc->get();</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
+    <?php
+    $errors = array();
+    if (!array_key_exists('code', $_GET)) {
+        $errors[] = 'Missing code from Authorization endpoint';
+    }
+    if (!count($errors)) {
+        $result = $fc->getAccessTokenFromAuthorizationCode($_GET['code']);
+        $errors = array_merge($errors,$fc->getErrors($result));
+        if (!count($errors)) {
+            $_SESSION['access_token'] = $result['access_token'];
+            $_SESSION['access_token_expires'] = time() + $result['expires_in'];
+            $_SESSION['refresh_token'] = $result['refresh_token'];
+            ?>
+            <h3 class="alert alert-success" role="alert">Access Token Obtained</h3>
+            <h3>Result:</h3>
+            <pre><?php print_r($result); ?></pre>
+            <?php
+        }
+    }
+    if (count($errors)) {
+        $action = '';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
+        foreach($errors as $error) {
+            print $error . '<br />';
+        }
+        print '</div>';
+    }
+}
+
+if ($action == 'client_credentials_grant') {
+    ?>
+    <h2>OAuth Client Credentials grant</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Request an access_token via Client Credentials grant <code>$fc->getAccessTokenFromClientCredentials();</code>.</li>
+        <li>Check for errors.</li>
+        <li>Update FoxyClient access_token <code>$fc->setAccessToken($access_token);</code>.</li>
+        <li>Get the homepage <code>$fc->get();</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
+    <?php
+    $errors = array();
+    $result = $fc->getAccessTokenFromClientCredentials();
+    $errors = array_merge($errors,$fc->getErrors($result));
+    if (!count($errors)) {
+        $_SESSION['access_token'] = $result['access_token'];
+        $_SESSION['access_token_expires'] = time() + $result['expires_in'];
+        $fc->setAccessToken($_SESSION['access_token']);
+        $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
+        ?>
+        <h3 class="alert alert-success" role="alert">Access Token Obtained</h3>
+        <h3>Result:</h3>
+        <pre><?php print_r($result); ?></pre>
+        <?php
+    }
+    if (count($errors)) {
+        $action = '';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
+        foreach($errors as $error) {
+            print $error . '<br />';
+        }
+        print '</div>';
+    }
 }
 
 if ($action == 'check_user_exists') {
@@ -406,23 +516,24 @@ if ($action == 'check_user_exists') {
                 $errors = array_merge($errors,$fc->getErrors($result));
                 if (!count($errors)) {
                     ?>
-                    <h3>User Exists</h3>
+                    <h3 class="alert alert-success" role="alert">User Exists</h3>
                     <h3>Result:</h3>
                     <pre><?php print_r($result); ?></pre>
                     <?php
+                    print '<br /><a href="/?action=create_user_form">Create User</a>';
                 }
             }
         }
     }
     if (count($errors)) {
         $action = 'check_user_exists_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
-    print '<br /><a href="/?action=create_user_form">Create User</a>';
 }
 
 
@@ -433,7 +544,7 @@ if ($action == 'check_user_exists_form') {
         <div class="form-group">
             <label for="email" class="col-sm-2 control-label">User Email Address<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="email" class="form-control" id="email" name="email" maxlength="50" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
+                <input type="email" class="form-control" id="email" name="email" maxlength="200" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -493,7 +604,7 @@ if ($action == 'create_user') {
             $errors = array_merge($errors,$fc->getErrors($result));
             if (!count($errors)) {
                 ?>
-                <h3><?php print $result['message']; ?></h3>
+                <h3 class="alert alert-success" role="alert"><?php print $result['message']; ?></h3>
                 <pre><?php print_r($result['token']); ?></pre>
                 <?php
                 $_SESSION['access_token'] = $result['token']['access_token'];
@@ -524,11 +635,12 @@ if ($action == 'create_user') {
     }
     if (count($errors)) {
         $action = 'create_user_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
 }
 
@@ -540,25 +652,25 @@ if ($action == 'create_user_form') {
         <div class="form-group">
             <label for="first_name" class="col-sm-2 control-label">First Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="first_name" name="first_name" maxlength="50" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ""; ?>">
+                <input type="text" class="form-control" id="first_name" name="first_name" maxlength="200" value="<?php echo isset($_POST['first_name']) ? htmlspecialchars($_POST['first_name']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="last_name" class="col-sm-2 control-label">Last Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="last_name" name="last_name" maxlength="50" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ""; ?>">
+                <input type="text" class="form-control" id="last_name" name="last_name" maxlength="200" value="<?php echo isset($_POST['last_name']) ? htmlspecialchars($_POST['last_name']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="email" class="col-sm-2 control-label">Email<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="email" name="email" maxlength="50" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
+                <input type="text" class="form-control" id="email" name="email" maxlength="200" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="phone" class="col-sm-2 control-label">Phone<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="phone" name="phone" maxlength="50" value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ""; ?>">
+                <input type="text" class="form-control" id="phone" name="phone" maxlength="200" value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
@@ -640,7 +752,7 @@ if ($action == 'check_store_exists') {
                 $errors = array_merge($errors,$fc->getErrors($result));
                 if (!count($errors)) {
                     ?>
-                    <h3>Store Exists</h3>
+                    <h3 class="alert alert-success" role="alert">Store Exists</h3>
                     <h3>Result:</h3>
                     <pre><?php print_r($result); ?></pre>
                     <?php
@@ -650,11 +762,12 @@ if ($action == 'check_store_exists') {
     }
     if (count($errors)) {
         $action = 'check_store_exists_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
     print '<br /><a href="/?action=create_store_form">Create Store</a>';
 }
@@ -667,7 +780,7 @@ if ($action == 'check_store_exists_form') {
         <div class="form-group">
             <label for="project_name" class="col-sm-2 control-label">Foxy Store Domain<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="50" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
+                <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="200" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -728,7 +841,7 @@ if ($action == 'create_store') {
             $errors = array_merge($errors,$fc->getErrors($result));
             if (!count($errors)) {
                 ?>
-                <h3><?php print $result['message']; ?></h3>
+                <h3 class="alert alert-success" role="alert"><?php print $result['message']; ?></h3>
                 <pre><?php print_r($result['token']); ?></pre>
                 <?php
                 $_SESSION['access_token'] = $result['token']['access_token'];
@@ -759,11 +872,12 @@ if ($action == 'create_store') {
     }
     if (count($errors)) {
         $action = 'create_store_form';
-        print '<pre>';
+        print '<div class="alert alert-danger" role="alert">';
+        print '<h2>Error:</h2>';
         foreach($errors as $error) {
-            print $error . "\n";
+            print $error . '<br />';
         }
-        print '</pre>';
+        print '</div>';
     }
 }
 
@@ -775,43 +889,43 @@ if ($action == 'create_store_form') {
         <div class="form-group">
             <label for="store_name" class="col-sm-2 control-label">Store Name<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_name" name="store_name" maxlength="50" value="<?php echo isset($_POST['store_name']) ? htmlspecialchars($_POST['store_name']) : ""; ?>">
+                <input type="text" class="form-control" id="store_name" name="store_name" maxlength="200" value="<?php echo isset($_POST['store_name']) ? htmlspecialchars($_POST['store_name']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_domain" class="col-sm-2 control-label">Store Domain<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="50" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
+                <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="200" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_url" class="col-sm-2 control-label">Store URL<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_url" name="store_url" maxlength="50" value="<?php echo isset($_POST['store_url']) ? htmlspecialchars($_POST['store_url']) : ""; ?>">
+                <input type="text" class="form-control" id="store_url" name="store_url" maxlength="200" value="<?php echo isset($_POST['store_url']) ? htmlspecialchars($_POST['store_url']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_email" class="col-sm-2 control-label">Store Email<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_email" name="store_email" maxlength="50" value="<?php echo isset($_POST['store_email']) ? htmlspecialchars($_POST['store_email']) : ""; ?>">
+                <input type="text" class="form-control" id="store_email" name="store_email" maxlength="200" value="<?php echo isset($_POST['store_email']) ? htmlspecialchars($_POST['store_email']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_postal_code" class="col-sm-2 control-label">Store Postal Code<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_postal_code" name="store_postal_code" maxlength="50" value="<?php echo isset($_POST['store_postal_code']) ? htmlspecialchars($_POST['store_postal_code']) : ""; ?>">
+                <input type="text" class="form-control" id="store_postal_code" name="store_postal_code" maxlength="200" value="<?php echo isset($_POST['store_postal_code']) ? htmlspecialchars($_POST['store_postal_code']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_country" class="col-sm-2 control-label">Store Country (ISO 3166-1 alpha-2)<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_country" name="store_country" maxlength="50" value="<?php echo isset($_POST['store_country']) ? htmlspecialchars($_POST['store_country']) : ""; ?>">
+                <input type="text" class="form-control" id="store_country" name="store_country" maxlength="200" value="<?php echo isset($_POST['store_country']) ? htmlspecialchars($_POST['store_country']) : ""; ?>">
             </div>
         </div>
         <div class="form-group">
             <label for="store_state" class="col-sm-2 control-label">Store State (ISO 3166-2)<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="store_state" name="store_state" maxlength="50" value="<?php echo isset($_POST['store_state']) ? htmlspecialchars($_POST['store_state']) : ""; ?>">
+                <input type="text" class="form-control" id="store_state" name="store_state" maxlength="200" value="<?php echo isset($_POST['store_state']) ? htmlspecialchars($_POST['store_state']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
