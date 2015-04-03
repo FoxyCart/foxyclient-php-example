@@ -1,6 +1,8 @@
 <?php
 // Composer based autoloading (see: http://getcomposer.org/doc/04-schema.md#autoload)
 require __DIR__ . '/vendor/autoload.php';
+date_default_timezone_set('America/Los_Angeles');
+session_start();
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Cache\CacheSubscriber;
@@ -22,7 +24,6 @@ $guzzle_config = array(
         )
     );
 
-
 /**
  * Set up our Guzzle Client
  */
@@ -33,3 +34,15 @@ CacheSubscriber::attach($guzzle);
  * Get our FoxyClient
  */
 $fc = new FoxyClient($guzzle, $config);
+
+/**
+ * Get some Cross Site Request Forgery protection love goin' on.
+ */
+$csrf = new \Riimu\Kit\CSRF\CSRFHandler(false);
+try {
+    $csrf->validateRequest(true);
+} catch (\Riimu\Kit\CSRF\InvalidCSRFTokenException $ex) {
+    header('HTTP/1.0 400 Bad Request');
+    exit('Bad CSRF Token!');
+}
+$token = $csrf->getToken();

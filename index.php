@@ -1,7 +1,5 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-date_default_timezone_set('America/Los_Angeles');
-session_start();
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -163,8 +161,7 @@ if ($action == 'register_client_form') {
                 <input type="text" class="form-control" id="javascript_origin_uri" name="javascript_origin_uri" maxlength="50" value="<?php echo isset($_POST['javascript_origin_uri']) ? htmlspecialchars($_POST['javascript_origin_uri']) : ""; ?>">
             </div>
         </div>
-
-
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Create Client</button>
     </form>
 
@@ -282,6 +279,7 @@ if ($action == 'authenticate_client_form') {
                 <input type="text" class="form-control" id="client_secret" name="client_secret" maxlength="50" value="<?php echo isset($_POST['client_secret']) ? htmlspecialchars($_POST['client_secret']) : ""; ?>">
             </div>
         </div>
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Authenticate Client</button>
     </form>
 <?php
@@ -342,6 +340,7 @@ if ($action == 'check_user_exists_form') {
                 <input type="text" class="form-control" id="email" name="email" maxlength="50" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
             </div>
         </div>
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Check User</button>
     </form>
 <?php
@@ -430,7 +429,7 @@ if ($action == 'create_user_form') {
                 <input type="checkbox" class="form-control" id="is_merchant" name="is_merchant">
             </div>
         </div>
-
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Create User</button>
     </form>
 <?php
@@ -473,6 +472,7 @@ if ($action == 'check_store_exists_form') {
                 <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="50" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
             </div>
         </div>
+        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
         <button type="submit" class="btn btn-primary">Check Store</button>
     </form>
 <?php

@@ -1,6 +1,7 @@
 {
     "require": {
-        "foxycart/foxyclient": "0.1.*"
+        "foxycart/foxyclient": "0.1.*",
+        "riimu/kit-csrf": "2.*"
     },
     "repositories": [
         {
