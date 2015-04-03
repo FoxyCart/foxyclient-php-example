@@ -13,6 +13,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <style>
         body { padding-bottom: 70px; }
+        footer { padding-top: 50px; }
     </style>
   </head>
   <body>
@@ -52,15 +53,15 @@ if (isset($_SESSION['client_secret']) && $fc->getClientSecret() != $_SESSION['cl
         $fc->setClientSecret($_SESSION['client_secret']);
     }
 }
-if (isset($_SESSION['token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['token_expires']) {
+if (isset($_SESSION['access_token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['access_token_expires']) {
     if ($fc->getAccessTokenExpires() == '') {
-        $fc->setAccessTokenExpires($_SESSION['token_expires']);
+        $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
     }
 }
 
 // BEGIN HERE
 if ($action == '') {
-?>
+    ?>
     <h1>Welcome to the Foxy Hypermedia API example!</h1>
     <p>
         If you haven't already, please check out the <a href="https://api-sandbox.foxycart.com/docs">Foxy hAPI documentation</a> to better understand the purpose of this library.
@@ -77,10 +78,112 @@ if ($action == '') {
             <li>OAuth Authorization Code grant</li>
         </ol>
     </p>
-<?php
+    <?php
 }
 
+
+if ($action == 'register_client') {
+    ?>
+    <h2>Register Client</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Clear FoxyClient credentials <code>$fc->clearCredentials();</code>.</li>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:create_client</code> link.</li>
+        <li>Check for errors.</li>
+        <li>Post data to create a client resource <code>$fc->post($create_client_uri,$data);</code>.</li>
+        <li>Check for errors.</li>
+        <li>Configure FoxyClient with the new OAuth token from the response.</li>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:client</code> link (authenticated with a <code>client_full_access</code> scope).</li>
+        <li>Check for errors.</li>
+        <li>Get the client <code>$fc->get($client_uri);</code> and save the <code>client_id</code> and <code>client_secret</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
+    <?php
+    $errors = array();
+    $fc->clearCredentials();
+    $fc->get();
+    $create_client_uri = $fc->getLink('fx:create_client');
+    if ($create_client_uri == '') {
+        $errors[] = 'Unable to obtain fx:create_client href';
+    }
+    $required_fields = array(
+        'redirect_uri',
+        'project_name',
+        'company_name',
+        'contact_name',
+        'contact_email',
+        'contact_phone'
+    );
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
+    }
+    $data = array(
+        'redirect_uri' => $_POST['redirect_uri'],
+        'project_name' => $_POST['project_name'],
+        'project_description' => $_POST['project_description'],
+        'company_name' => $_POST['company_name'],
+        'company_url' => $_POST['company_url'],
+        'company_logo' => $_POST['company_logo'],
+        'contact_name' => $_POST['contact_name'],
+        'contact_email' => $_POST['contact_email'],
+        'contact_phone' => $_POST['contact_phone'],
+    );
+    if (!count($errors)) {
+        $result = $fc->post($create_client_uri,$data);
+        $errors = array_merge($errors,$fc->getErrors($result));
+        if (!count($errors)) {
+            ?>
+            <h3><?php print $result['message']; ?></h3>
+            <pre><?php print_r($result['token']); ?></pre>
+            <?php
+            $_SESSION['access_token'] = $result['token']['access_token'];
+            $_SESSION['refresh_token'] = $result['token']['refresh_token'];
+            $_SESSION['access_token_expires'] = time() + $result['token']['expires_in'];
+            $fc->setAccessToken($_SESSION['access_token']);
+            $fc->setRefreshToken($_SESSION['refresh_token']);
+            $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
+            $result = $fc->get();
+            $errors = array_merge($errors,$fc->getErrors($result));
+            $client_uri = $fc->getLink('fx:client');
+            if ($client_uri == '') {
+                $errors[] = 'Unable to obtain fx:client href';
+            }
+            if (!count($errors)) {
+                $result = $fc->get($client_uri);
+                $errors = array_merge($errors,$fc->getErrors($result));
+                if (!count($errors)) {
+                    $_SESSION['client_id'] = $result['client_id'];
+                    $_SESSION['client_secret'] = $result['client_secret'];
+                    $fc->setClientId($_SESSION['client_id']);
+                    $fc->setClientSecret($_SESSION['client_secret']);
+                    ?>
+                    <h3>Client Registered</h3>
+                    <h3>Result:</h3>
+                    <pre><?php print_r($result); ?></pre>
+                    <?php
+                }
+            }
+        }
+    }
+    if (count($errors)) {
+        $action = 'register_client_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
+    }
+}
+
+
 if ($action == 'register_client_form') {
+    $redirect_uri = 'http' . (($_SERVER['SERVER_PORT'] == 443) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
+    $redirect_uri .= "?action=oauth_code_grant";
+    if (isset($_POST['redirect_uri'])) {
+        $redirect_uri = htmlspecialchars($_POST['redirect_uri']);
+    }
     ?>
     <h2><a href="https://tools.ietf.org/html/rfc6749#section-2">Register</a> your OAuth Client</h2>
     <form role="form" action="/?action=register_client" method="post" class="form-horizontal">
@@ -141,8 +244,8 @@ if ($action == 'register_client_form') {
         <div class="form-group">
             <label for="redirect_uri" class="col-sm-2 control-label">Redirect URI<span class="text-danger">*</span></label>
             <div class="col-sm-5">
-                <input type="text" class="form-control" id="redirect_uri" name="redirect_uri" maxlength="50" value="<?php echo isset($_POST['redirect_uri']) ? htmlspecialchars($_POST['redirect_uri']) : ""; ?>">
-                <small class="muted">This should be the current page's URL</small>
+                <input type="text" class="form-control" id="redirect_uri" name="redirect_uri" maxlength="50" value="<?php echo $redirect_uri; ?>">
+                <small class="muted">Put your application's OAuth Code Grant endpoint here.</small>
             </div>
         </div>
 
@@ -150,6 +253,7 @@ if ($action == 'register_client_form') {
             <label for="javascript_origin_uri" class="col-sm-2 control-label">Javascript Origin URI</label>
             <div class="col-sm-5">
                 <input type="text" class="form-control" id="javascript_origin_uri" name="javascript_origin_uri" maxlength="50" value="<?php echo isset($_POST['javascript_origin_uri']) ? htmlspecialchars($_POST['javascript_origin_uri']) : ""; ?>">
+                <small class="muted">This is used by public OAuth clients (like a mobile browser only app where you can't secure the credentials).</small>
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -159,89 +263,63 @@ if ($action == 'register_client_form') {
 <?php
 }
 
-if ($action == 'register_client') {
+if ($action == 'authenticate_client') {
     ?>
-    <h2>Client Registered</h2>
-    <h3>Code:</h3>
-    <pre>
-    $fc->clearCredentials();
-    $fc->get();
-    $create_client_uri = $fc->getLink('fx:create_client');
-    if ($create_client_uri == '') {
-        die('Unable to obtain fx:create_client href');
+    <h2>Authenticate Client</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Update FoxyClient credentials <code>$fc->updateFromConfig($data);</code>.</li>
+        <li>Get the homepage <code>$fc->get();</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
+    <?php
+    $errors = array();
+    $required_fields = array(
+        'refresh_token',
+        'client_id',
+        'client_secret'
+    );
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
     }
     $data = array(
-        'redirect_uri' => $_POST['redirect_uri'],
-        'project_name' => $_POST['project_name'],
-        'project_description' => $_POST['project_description'],
-        'company_name' => $_POST['company_name'],
-        'company_url' => $_POST['company_url'],
-        'company_logo' => $_POST['company_logo'],
-        'contact_name' => $_POST['contact_name'],
-        'contact_email' => $_POST['contact_email'],
-        'contact_phone' => $_POST['contact_phone'],
+        'access_token' => $_POST['access_token'],
+        'refresh_token' => $_POST['refresh_token'],
+        'access_token_expires' => $_POST['access_token_expires'],
+        'client_id' => $_POST['client_id'],
+        'client_secret' => $_POST['client_secret'],
     );
-    $result = $fc->post($create_client_uri,$data);
-    print_r($result);
-    $fc->setAccessToken($result['token']['access_token']);
-    $fc->setRefreshToken($result['token']['refresh_token']);
-    $fc->setAccessTokenExpires(time() + $result['token']['token_expires']);
-    $fc->get();
-    $client_uri = $fc->getLink('fx:client');
-    if ($client_uri == '') {
-        die('Unable to obtain fx:client href');
+    if (!count($errors)) {
+        $fc->updateFromConfig($data);
+        $result = $fc->get();
+        $errors = array_merge($errors,$fc->getErrors($result));
+        if (!count($errors)) {
+            $_SESSION['client_id'] = $data['client_id'];
+            $_SESSION['client_secret'] = $data['client_secret'];
+            $_SESSION['access_token'] = $data['access_token'];
+            $_SESSION['refresh_token'] = $data['refresh_token'];
+            $_SESSION['access_token_expires'] = $data['access_token_expires'];
+            ?>
+            <h3>Client Authenticated</h3>
+            <h3>Result:</h3>
+            <pre><?php print_r($result); ?></pre>
+            <?php
+            print '<br /><a href="/?action=check_user_exists_form">Check if User Exists</a>';
+            print '<br /><a href="/?action=create_user_form">Create User</a> <span class="muted">(client_full_access scope only)</span>';
+            print '<br /><a href="/?action=check_store_exists_form">Check if Store Exists</a>';
+            print '<br /><a href="/?action=create_store_form">Create Store</a> <span class="muted">(user_full_access scope only)</span>';
+        }
     }
-    $result = $fc->get($client_uri);
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
-    <?php
-    $fc->clearCredentials();
-    $fc->get();
-    $create_client_uri = $fc->getLink('fx:create_client');
-    if ($create_client_uri == '') {
-        die('Unable to obtain fx:create_client href');
+    if (count($errors)) {
+        $action = 'authenticate_client_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
     }
-    $data = array(
-        'redirect_uri' => $_POST['redirect_uri'],
-        'project_name' => $_POST['project_name'],
-        'project_description' => $_POST['project_description'],
-        'company_name' => $_POST['company_name'],
-        'company_url' => $_POST['company_url'],
-        'company_logo' => $_POST['company_logo'],
-        'contact_name' => $_POST['contact_name'],
-        'contact_email' => $_POST['contact_email'],
-        'contact_phone' => $_POST['contact_phone'],
-    );
-    $result = $fc->post($create_client_uri,$data);
-    if ($errors = $fc->checkForErrors($result)) {
-        die("<pre>" . print_r($errors, 1) . "</pre>");
-    }
-    ?>
-    <h1><?php print $result['message']; ?></h1>
-    <pre><?php print_r($result['token']); ?></pre>
-    <?php
-    $_SESSION['access_token'] = $result['token']['access_token'];
-    $_SESSION['refresh_token'] = $result['token']['refresh_token'];
-    $_SESSION['token_expires'] = time() + $result['token']['expires_in'];
-
-    $fc->setAccessToken($_SESSION['access_token']);
-    $fc->setRefreshToken($_SESSION['refresh_token']);
-    $fc->setAccessTokenExpires($_SESSION['token_expires']);
-    $fc->get();
-    $client_uri = $fc->getLink('fx:client');
-    if ($client_uri == '') {
-        die('Unable to obtain fx:client href');
-    }
-    $result = $fc->get($client_uri);
-
-    $_SESSION['client_id'] = $result['client_id'];
-    $_SESSION['client_secret'] = $result['client_secret'];
-    $fc->setClientId($_SESSION['client_id']);
-    $fc->setClientSecret($_SESSION['client_secret']);
-    ?>
-    <pre><?php print_r($result); ?></pre>
-    <?php
 }
 
 if ($action == 'authenticate_client_form') {
@@ -273,9 +351,9 @@ if ($action == 'authenticate_client_form') {
             </div>
         </div>
         <div class="form-group">
-            <label for="token_expires" class="col-sm-2 control-label">Token Expires</label>
+            <label for="access_token_expires" class="col-sm-2 control-label">Token Expires</label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="token_expires" name="token_expires" maxlength="50" value="<?php echo isset($_POST['token_expires']) ? htmlspecialchars($_POST['token_expires']) : ""; ?>">
+                <input type="text" class="form-control" id="access_token_expires" name="access_token_expires" maxlength="50" value="<?php echo isset($_POST['access_token_expires']) ? htmlspecialchars($_POST['access_token_expires']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -284,42 +362,69 @@ if ($action == 'authenticate_client_form') {
 <?php
 }
 
-if ($action == 'authenticate_client') {
+if ($action == 'check_user_exists') {
     ?>
-    <h2>Client Authenticated</h2>
-    <h3>Code:</h3>
-    <pre>
-    $data = array(
-        'access_token' => $_POST['access_token'],
-        'refresh_token' => $_POST['refresh_token'],
-        'token_expires' => $_POST['token_expires'],
-        'client_id' => $_POST['client_id'],
-        'client_secret' => $_POST['client_secret'],
-    );
-    $fc->updateFromConfig($data);
-    $result = $fc->get();
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
+    <h2>Check User Exists</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:reporting</code> link.</li>
+        <li>Check for errors.</li>
+        <li>Go to the reporting homepage <code>$fc->get($reporting_uri);</code> so we can get the <code>fx:reporting_email_exists</code> link.</li>
+        <li>Check for errors.</li>
+        <li>Check if the email exists as a user <code>$fc->get($email_exists_uri, $data);</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
     <?php
-    $data = array(
-        'access_token' => $_POST['access_token'],
-        'refresh_token' => $_POST['refresh_token'],
-        'token_expires' => $_POST['token_expires'],
-        'client_id' => $_POST['client_id'],
-        'client_secret' => $_POST['client_secret'],
+    $errors = array();
+    $required_fields = array(
+        'email'
     );
-    $_SESSION['client_id'] = $data['client_id'];
-    $_SESSION['client_secret'] = $data['client_secret'];
-    $_SESSION['access_token'] = $data['access_token'];
-    $_SESSION['refresh_token'] = $data['refresh_token'];
-    $_SESSION['token_expires'] = $data['token_expires'];
-    $fc->updateFromConfig($data);
-    $result = $fc->get();
-    ?>
-    <pre><?php print_r($result); ?></pre>
-    <?php
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
+    }
+    $data = array(
+        'email' => $_POST['email'],
+    );
+    if (!count($errors)) {
+        $result = $fc->get();
+        $errors = array_merge($errors,$fc->getErrors($result));
+        $reporting_uri = $fc->getLink('fx:reporting');
+        if ($reporting_uri == '') {
+            $errors[] = 'Unable to obtain fx:reporting href';
+        }
+        if (!count($errors)) {
+            $result = $fc->get($reporting_uri);
+            $errors = array_merge($errors,$fc->getErrors($result));
+            $email_exists_uri = $fc->getLink('fx:reporting_email_exists');
+            if ($email_exists_uri == '') {
+                $errors[] = 'Unable to obtain fx:reporting_email_exists href';
+            }
+            if (!count($errors)) {
+                $result = $fc->get($email_exists_uri, $data);
+                $errors = array_merge($errors,$fc->getErrors($result));
+                if (!count($errors)) {
+                    ?>
+                    <h3>User Exists</h3>
+                    <h3>Result:</h3>
+                    <pre><?php print_r($result); ?></pre>
+                    <?php
+                }
+            }
+        }
+    }
+    if (count($errors)) {
+        $action = 'check_user_exists_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
+    }
+    print '<br /><a href="/?action=create_user_form">Create User</a>';
 }
+
 
 if ($action == 'check_user_exists_form') {
     ?>
@@ -328,7 +433,7 @@ if ($action == 'check_user_exists_form') {
         <div class="form-group">
             <label for="email" class="col-sm-2 control-label">User Email Address<span class="text-danger">*</span></label>
             <div class="col-sm-3">
-                <input type="text" class="form-control" id="email" name="email" maxlength="50" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
+                <input type="email" class="form-control" id="email" name="email" maxlength="50" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -337,46 +442,94 @@ if ($action == 'check_user_exists_form') {
 <?php
 }
 
-if ($action == 'check_user_exists') {
+
+if ($action == 'create_user') {
     ?>
-    <h2>User Exists Results</h2>
-    <h3>Code:</h3>
-    <pre>
-    $data = array(
-        'email' => $_POST['email'],
-    );
-    $result = $fc->get();
-    $reporting_uri = $fc->getLink('fx:reporting');
-    if ($reporting_uri == '') {
-        die('Unable to obtain fx:reporting href');
-    }
-    $result = $fc->get($reporting_uri);
-    $email_exists_uri = $fc->getLink('fx:reporting_email_exists');
-    if ($email_exists_uri == '') {
-        die('Unable to obtain fx:reporting_email_exists href');
-    }
-    $result = $fc->get($email_exists_uri, $data);
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
+    <h2>Create User</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:create_user</code> link (authenticated with a <code>client_full_access</code> scope).</li>
+        <li>Check for errors.</li>
+        <li>Post data to create a user resource <code>$fc->post($create_user_uri, $data);</code>.</li>
+        <li>Check for errors.</li>
+        <li>Configure FoxyClient with the new OAuth token from the response.</li>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:user</code> link (authenticated with a <code>user_full_accesss</code> scope).</li>
+        <li>Check for errors.</li>
+        <li>Get the user <code>$fc->get($user_uri);</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
     <?php
-    $data = array(
-        'email' => $_POST['email'],
+    $errors = array();
+    $required_fields = array(
+        'first_name',
+        'last_name',
+        'email',
+        'phone'
     );
-    $result = $fc->get();
-    $reporting_uri = $fc->getLink('fx:reporting');
-    if ($reporting_uri == '') {
-        die('Unable to obtain fx:reporting href');
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
     }
-    $result = $fc->get($reporting_uri);
-    $email_exists_uri = $fc->getLink('fx:reporting_email_exists');
-    if ($email_exists_uri == '') {
-        die('Unable to obtain fx:reporting_email_exists href');
+    $data = array(
+        'first_name' => $_POST['first_name'],
+        'last_name' => $_POST['last_name'],
+        'email' => $_POST['email'],
+        'phone' => $_POST['phone'],
+        'is_programmer' => isset($_POST['is_programmer']),
+        'is_front_end_developer' => isset($_POST['is_front_end_developer']),
+        'is_designer' => isset($_POST['is_designer']),
+        'is_merchant' => isset($_POST['is_merchant']),
+    );
+    if (!count($errors)) {
+        $result = $fc->get();
+        $errors = array_merge($errors,$fc->getErrors($result));
+        $create_user_uri = $fc->getLink('fx:create_user');
+        if ($create_user_uri == '') {
+            $errors[] = 'Unable to obtain fx:create_user href';
+        }
+        if (!count($errors)) {
+            $result = $fc->post($create_user_uri, $data);
+            $errors = array_merge($errors,$fc->getErrors($result));
+            if (!count($errors)) {
+                ?>
+                <h3><?php print $result['message']; ?></h3>
+                <pre><?php print_r($result['token']); ?></pre>
+                <?php
+                $_SESSION['access_token'] = $result['token']['access_token'];
+                $_SESSION['refresh_token'] = $result['token']['refresh_token'];
+                $_SESSION['access_token_expires'] = time() + $result['token']['expires_in'];
+                $fc->setAccessToken($_SESSION['access_token']);
+                $fc->setRefreshToken($_SESSION['refresh_token']);
+                $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
+                $result = $fc->get();
+                $errors = array_merge($errors,$fc->getErrors($result));
+                $user_uri = $fc->getLink('fx:user');
+                if ($user_uri == '') {
+                    $errors[] = 'Unable to obtain fx:user href';
+                }
+                if (!count($errors)) {
+                    $result = $fc->get($user_uri);
+                    $errors = array_merge($errors,$fc->getErrors($result));
+                    if (!count($errors)) {
+                        ?>
+                        <h3>Result:</h3>
+                        <pre><?php print_r($result); ?></pre>
+                        <?php
+                        print '<br /><a href="/?action=check_store_exists">Check if Store Exists</a>';
+                    }
+                }
+            }
+        }
     }
-    $result = $fc->get($email_exists_uri, $data);
-    ?>
-    <pre><?php print_r($result); ?></pre>
-    <?php
+    if (count($errors)) {
+        $action = 'create_user_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
+    }
 }
 
 
@@ -411,25 +564,29 @@ if ($action == 'create_user_form') {
         <div class="form-group">
             <label for="is_programmer" class="col-sm-2 control-label">is_programmer</label>
             <div class="col-sm-3">
-                <input type="checkbox" class="form-control" id="is_programmer" name="is_programmer">
+                <?php $checked = (isset($_POST['is_programmer']) ? ' checked' : ''); ?>
+                <input type="checkbox"<?php print $checked; ?> class="form-control" id="is_programmer" name="is_programmer">
             </div>
         </div>
         <div class="form-group">
             <label for="is_front_end_developer" class="col-sm-2 control-label">is_front_end_developer</label>
             <div class="col-sm-3">
-                <input type="checkbox" class="form-control" id="is_front_end_developer" name="is_front_end_developer">
+                <?php $checked = (isset($_POST['is_front_end_developer']) ? ' checked' : ''); ?>
+                <input type="checkbox"<?php print $checked; ?> class="form-control" id="is_front_end_developer" name="is_front_end_developer">
             </div>
         </div>
         <div class="form-group">
             <label for="is_designer" class="col-sm-2 control-label">is_designer</label>
             <div class="col-sm-3">
-                <input type="checkbox" class="form-control" id="is_designer" name="is_designer">
+                <?php $checked = (isset($_POST['is_designer']) ? ' checked' : ''); ?>
+                <input type="checkbox"<?php print $checked; ?> class="form-control" id="is_designer" name="is_designer">
             </div>
         </div>
         <div class="form-group">
             <label for="is_merchant" class="col-sm-2 control-label">is_merchant</label>
             <div class="col-sm-3">
-                <input type="checkbox" class="form-control" id="is_merchant" name="is_merchant">
+                <?php $checked = (isset($_POST['is_merchant']) ? ' checked' : ''); ?>
+                <input type="checkbox"<?php print $checked; ?> class="form-control" id="is_merchant" name="is_merchant">
             </div>
         </div>
         <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
@@ -438,74 +595,70 @@ if ($action == 'create_user_form') {
 <?php
 }
 
-if ($action == 'create_user') {
-    ?>
-    <h2>User Created</h2>
-    <h3>Code:</h3>
-    <pre>
-    $data = array(
-        'first_name' => $_POST['first_name'],
-        'last_name' => $_POST['last_name'],
-        'email' => $_POST['email'],
-        'phone' => $_POST['phone'],
-        'is_programmer' => $_POST['is_programmer'],
-        'is_front_end_developer' => isset($_POST['is_front_end_developer']),
-        'is_designer' => isset($_POST['is_designer']),
-        'is_merchant' => isset($_POST['is_merchant']),
-    );
-    $result = $fc->get();
-    $create_user_uri = $fc->getLink('fx:create_user');
-    if ($create_user_uri == '') {
-        die('Unable to obtain fx:create_user href');
-    }
-    $result = $fc->get($create_user_uri, $data);
-    $fc->setAccessToken($result['token']['access_token']);
-    $fc->setRefreshToken($result['token']['refresh_token']);
-    $fc->setAccessTokenExpires(time() + $result['token']['expires_in']);
-    $fc->get();
-    $user_uri = $fc->getLink('fx:user');
-    if ($user_uri == '') {
-        die('Unable to obtain fx:user href');
-    }
-    $result = $fc->get($user_uri);
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
-    <?php
-    $data = array(
-        'first_name' => $_POST['first_name'],
-        'last_name' => $_POST['last_name'],
-        'email' => $_POST['email'],
-        'phone' => $_POST['phone'],
-        'is_programmer' => isset($_POST['is_programmer']),
-        'is_front_end_developer' => isset($_POST['is_front_end_developer']),
-        'is_designer' => isset($_POST['is_designer']),
-        'is_merchant' => isset($_POST['is_merchant']),
-    );
-    $result = $fc->get();
-    $create_user_uri = $fc->getLink('fx:create_user');
-    if ($create_user_uri == '') {
-        die('Unable to obtain fx:create_user href');
-    }
-    $result = $fc->post($create_user_uri, $data);
 
-    $_SESSION['access_token'] = $result['token']['access_token'];
-    $_SESSION['refresh_token'] = $result['token']['refresh_token'];
-    $_SESSION['token_expires'] = time() + $result['token']['expires_in'];
-
-    $fc->setAccessToken($_SESSION['access_token']);
-    $fc->setRefreshToken($_SESSION['refresh_token']);
-    $fc->setAccessTokenExpires($_SESSION['token_expires']);
-    $fc->get();
-    $user_uri = $fc->getLink('fx:user');
-    if ($user_uri == '') {
-        die('Unable to obtain fx:user href');
-    }
-    $result = $fc->get($user_uri);
+if ($action == 'check_store_exists') {
     ?>
-    <pre><?php print_r($result); ?></pre>
+    <h3>Check Store Exists</h3>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:reporting</code> link.</li>
+        <li>Check for errors.</li>
+        <li>Go to the reporting homepage <code>$fc->get($reporting_uri);</code> so we can get the <code>fx:reporting_store_domain_exists</code> link.</li>
+        <li>Check for errors.</li>
+        <li>Check if the store_domain exists as a store <code>$fc->get($store_exists_uri, $data);</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
     <?php
+    $errors = array();
+    $required_fields = array(
+        'store_domain'
+    );
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
+    }
+    $data = array(
+        'store_domain' => $_POST['store_domain'],
+    );
+    if (!count($errors)) {
+        $result = $fc->get();
+        $errors = array_merge($errors,$fc->getErrors($result));
+        $reporting_uri = $fc->getLink('fx:reporting');
+        if ($reporting_uri == '') {
+            $errors[] = 'Unable to obtain fx:reporting href';
+        }
+        if (!count($errors)) {
+            $result = $fc->get($reporting_uri);
+            $errors = array_merge($errors,$fc->getErrors($result));
+            $store_exists_uri = $fc->getLink('fx:reporting_store_domain_exists');
+            if ($store_exists_uri == '') {
+                $errors[] = 'Unable to obtain fx:reporting_store_domain_exists href';
+            }
+            if (!count($errors)) {
+                $result = $fc->get($store_exists_uri, $data);
+                $errors = array_merge($errors,$fc->getErrors($result));
+                if (!count($errors)) {
+                    ?>
+                    <h3>Store Exists</h3>
+                    <h3>Result:</h3>
+                    <pre><?php print_r($result); ?></pre>
+                    <?php
+                }
+            }
+        }
+    }
+    if (count($errors)) {
+        $action = 'check_store_exists_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
+    }
+    print '<br /><a href="/?action=create_store_form">Create Store</a>';
 }
+
 
 if ($action == 'check_store_exists_form') {
     ?>
@@ -523,48 +676,96 @@ if ($action == 'check_store_exists_form') {
 <?php
 }
 
-if ($action == 'check_store_exists') {
+if ($action == 'create_store') {
     ?>
-    <h2>Store Exists Results</h2>
-    <h3>Code:</h3>
-    <pre>
-    $data = array(
-        'store_domain' => $_POST['store_domain'],
-    );
-    $result = $fc->get();
-    $reporting_uri = $fc->getLink('fx:reporting');
-    if ($reporting_uri == '') {
-        die('Unable to obtain fx:reporting href');
-    }
-    $result = $fc->get($reporting_uri);
-    $store_exists_uri = $fc->getLink('fx:reporting_store_domain_exists');
-    if ($store_exists_uri == '') {
-        die('Unable to obtain fx:reporting_store_domain_exists href');
-    }
-    $result = $fc->get($store_exists_uri, $data);
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
+    <h2>Create Store</h2>
+    <h3>Code Steps:</h3>
+    <ol>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:stores</code> link (authenticated with a <code>user_full_access</code> scope).</li>
+        <li>Check for errors.</li>
+        <li>Post data to create a store resource <code>$fc->post($stores_uri, $data);</code>.</li>
+        <li>Check for errors.</li>
+        <li>Configure FoxyClient with the new OAuth token from the response.</li>
+        <li>Get the homepage <code>$fc->get();</code> so we can get the <code>fx:store</code> link  (authenticated with a <code>store_full_accesss</code> scope).</li>
+        <li>Check for errors.</li>
+        <li>Get the store <code>$fc->get($store_uri);</code>.</li>
+        <li>Check for errors.</li>
+    </ol>
     <?php
-    $data = array(
-        'store_domain' => $_POST['store_domain'],
+    $errors = array();
+    $required_fields = array(
+        'store_name',
+        'store_domain',
+        'store_url',
+        'store_email',
+        'store_postal_code',
+        'store_country',
+        'store_state'
     );
-    $result = $fc->get();
-    $reporting_uri = $fc->getLink('fx:reporting');
-    if ($reporting_uri == '') {
-        die('Unable to obtain fx:reporting href');
+    foreach($required_fields as $required_field) {
+        if ($_POST[$required_field] == '') {
+            $errors[] = $required_field . ' can not be blank';
+        }
     }
-    $result = $fc->get($reporting_uri);
-    $store_exists_uri = $fc->getLink('fx:reporting_store_domain_exists');
-    if ($store_exists_uri == '') {
-        die('Unable to obtain fx:reporting_store_domain_exists href');
+    $data = array(
+            'store_name' => $_POST['store_name'],
+            'store_domain' => $_POST['store_domain'],
+            'store_url' => $_POST['store_url'],
+            'store_email' => $_POST['store_email'],
+            'store_postal_code' => $_POST['store_postal_code'],
+            'store_country' => $_POST['store_country'],
+            'store_state' => $_POST['store_state']
+    );
+    if (!count($errors)) {
+        $result = $fc->get();
+        $errors = array_merge($errors,$fc->getErrors($result));
+        $stores_uri = $fc->getLink('fx:stores');
+        if ($stores_uri == '') {
+            $errors[] = 'Unable to obtain fx:stores href';
+        }
+        if (!count($errors)) {
+            $result = $fc->post($stores_uri, $data);
+            $errors = array_merge($errors,$fc->getErrors($result));
+            if (!count($errors)) {
+                ?>
+                <h3><?php print $result['message']; ?></h3>
+                <pre><?php print_r($result['token']); ?></pre>
+                <?php
+                $_SESSION['access_token'] = $result['token']['access_token'];
+                $_SESSION['refresh_token'] = $result['token']['refresh_token'];
+                $_SESSION['access_token_expires'] = time() + $result['token']['expires_in'];
+                $fc->setAccessToken($_SESSION['access_token']);
+                $fc->setRefreshToken($_SESSION['refresh_token']);
+                $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
+                $result = $fc->get();
+                $errors = array_merge($errors,$fc->getErrors($result));
+                $store_uri = $fc->getLink('fx:store');
+                if ($store_uri == '') {
+                    $errors[] = 'Unable to obtain fx:store href';
+                }
+                if (!count($errors)) {
+                    $result = $fc->get($store_uri);
+                    $errors = array_merge($errors,$fc->getErrors($result));
+                    if (!count($errors)) {
+                        ?>
+                        <h3>Result:</h3>
+                        <pre><?php print_r($result); ?></pre>
+                        <?php
+                        print '<br /><a href="/?action=">Home</a>';
+                    }
+                }
+            }
+        }
     }
-    $result = $fc->get($store_exists_uri, $data);
-    ?>
-    <pre><?php print_r($result); ?></pre>
-    <?php
+    if (count($errors)) {
+        $action = 'create_store_form';
+        print '<pre>';
+        foreach($errors as $error) {
+            print $error . "\n";
+        }
+        print '</pre>';
+    }
 }
-
 
 
 if ($action == 'create_store_form') {
@@ -619,78 +820,10 @@ if ($action == 'create_store_form') {
 <?php
 }
 
-if ($action == 'create_store') {
-    ?>
-    <h2>Store Created</h2>
-    <h3>Code:</h3>
-    <pre>
-    $data = array(
-            'store_name' => $_POST['store_name'],
-            'store_domain' => $_POST['store_domain'],
-            'store_url' => $_POST['store_url'],
-            'store_email' => $_POST['store_email'],
-            'store_postal_code' => $_POST['store_postal_code'],
-            'store_country' => $_POST['store_country'],
-            'store_state' => $_POST['store_state']
-    );
-    $result = $fc->get();
-    $stores_uri = $fc->getLink('fx:stores');
-    if ($stores_uri == '') {
-        die('Unable to obtain fx:stores href');
-    }
-    $result = $fc->post($stores_uri, $data);
-    $fc->setAccessToken($result['token']['access_token']);
-    $fc->setRefreshToken($result['token']['refresh_token']);
-    $fc->setAccessTokenExpires(time() + $result['token']['expires_in']);
-    $fc->get();
-    $store_uri = $fc->getLink('fx:store');
-    if ($store_uri == '') {
-        die('Unable to obtain fx:store href');
-    }
-    $result = $fc->get($store_uri);
-    print_r($result);
-    </pre>
-    <h3>Result:</h3>
-    <?php
-    $data = array(
-            'store_name' => $_POST['store_name'],
-            'store_domain' => $_POST['store_domain'],
-            'store_url' => $_POST['store_url'],
-            'store_email' => $_POST['store_email'],
-            'store_postal_code' => $_POST['store_postal_code'],
-            'store_country' => $_POST['store_country'],
-            'store_state' => $_POST['store_state']
-    );
-    $result = $fc->get();
-    $stores_uri = $fc->getLink('fx:stores');
-    if ($stores_uri == '') {
-        die('Unable to obtain fx:stores href');
-    }
-    $result = $fc->post($stores_uri, $data);
-
-    $_SESSION['access_token'] = $result['token']['access_token'];
-    $_SESSION['refresh_token'] = $result['token']['refresh_token'];
-    $_SESSION['token_expires'] = time() + $result['token']['expires_in'];
-
-    $fc->setAccessToken($_SESSION['access_token']);
-    $fc->setRefreshToken($_SESSION['refresh_token']);
-    $fc->setAccessTokenExpires($_SESSION['token_expires']);
-    $fc->get();
-    $store_uri = $fc->getLink('fx:store');
-    if ($store_uri == '') {
-        die('Unable to obtain fx:store href');
-    }
-    $result = $fc->get($store_uri);
-    ?>
-    <pre><?php print_r($result); ?></pre>
-    <?php
-}
-
-
 if ($action == 'logout') {
     session_destroy();
     $fc->clearCredentials();
-    print '<h1>You are Logged out</h1>';
+    print '<h2>You are Logged out</h2>';
     print '<br /><a href="/?action=">Home</a>';
 }
 
@@ -702,10 +835,10 @@ if (isset($_SESSION['access_token']) && $fc->getAccessToken() != $_SESSION['acce
         $_SESSION['access_token'] = $fc->getAccessToken();
     }
 }
-if (isset($_SESSION['token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['token_expires']) {
+if (isset($_SESSION['access_token_expires']) && $fc->getAccessTokenExpires() != $_SESSION['access_token_expires']) {
     // This can happen after a token refresh.
     if ($fc->getAccessTokenExpires() != '') {
-        $_SESSION['token_expires'] = $fc->getAccessTokenExpires();
+        $_SESSION['access_token_expires'] = $fc->getAccessTokenExpires();
     }
 }
 
@@ -717,7 +850,7 @@ if ($action != 'logout' && $fc->getAccessToken() != '') {
     print '<li>access_token: ' . $fc->getAccessToken() . '</li>';
     print '<li>refresh_token: (view source) <!--' . $fc->getRefreshToken() . '--></li>';
     if ($fc->getAccessTokenExpires() != '') {
-        print '<li>token_expires: ' . $fc->getAccessTokenExpires() . '</li>';
+        print '<li>access_token_expires: ' . $fc->getAccessTokenExpires() . '</li>';
         print '<li>now: ' . time() . '</li>';
         print '<li>next token refresh: ' . ($fc->getAccessTokenExpires() - time()) . '</li>';
     }
