@@ -264,7 +264,7 @@ if ($action == 'register_client_form') {
                 <small class="muted">This is used by public OAuth clients (like a mobile browser only app where you can't secure the credentials).</small>
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Create Client</button>
     </form>
 
@@ -366,7 +366,7 @@ if ($action == 'authenticate_client_form') {
                 <input type="text" class="form-control" id="access_token_expires" name="access_token_expires" maxlength="200" value="<?php echo isset($_POST['access_token_expires']) ? htmlspecialchars($_POST['access_token_expires']) : ""; ?>">
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Authenticate Client</button>
     </form>
     <?php
@@ -376,7 +376,7 @@ if ($action == 'authorization_code_grant_form') {
     ?>
     <h2>Authorize Your Application</h2>
     <form role="form" action="<?php print $fc->getAuthorizationEndpoint(); ?>" method="GET" class="form-horizontal">
-        <input type="hidden" name="state" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="state" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <input type="hidden" name="response_type" value="code" />
         <input type="hidden" name="client_id" value="<?php print $fc->getClientId(); ?>" />
         <div class="form-group">
@@ -388,7 +388,7 @@ if ($action == 'authorization_code_grant_form') {
                 </select>
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Authorize Application</button>
     </form>
     <?php
@@ -547,7 +547,7 @@ if ($action == 'check_user_exists_form') {
                 <input type="email" class="form-control" id="email" name="email" maxlength="200" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ""; ?>">
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Check User</button>
     </form>
 <?php
@@ -701,7 +701,7 @@ if ($action == 'create_user_form') {
                 <input type="checkbox"<?php print $checked; ?> class="form-control" id="is_merchant" name="is_merchant">
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Create User</button>
     </form>
 <?php
@@ -783,7 +783,7 @@ if ($action == 'check_store_exists_form') {
                 <input type="text" class="form-control" id="store_domain" name="store_domain" maxlength="200" value="<?php echo isset($_POST['store_domain']) ? htmlspecialchars($_POST['store_domain']) : ""; ?>">
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Check Store</button>
     </form>
 <?php
@@ -928,7 +928,7 @@ if ($action == 'create_store_form') {
                 <input type="text" class="form-control" id="store_state" name="store_state" maxlength="200" value="<?php echo isset($_POST['store_state']) ? htmlspecialchars($_POST['store_state']) : ""; ?>">
             </div>
         </div>
-        <input type="hidden" name="csrf_token" value="<?=htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8')?>" />
+        <input type="hidden" name="csrf_token" value="<?php print htmlspecialchars($token, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>" />
         <button type="submit" class="btn btn-primary">Create Store</button>
     </form>
 <?php
