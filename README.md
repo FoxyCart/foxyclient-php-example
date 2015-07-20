@@ -5,6 +5,10 @@ Please see <a href="https://api.foxycart.com/docs">the Foxy Hypermedia API docum
 
 This is an example usage of <a href="https://github.com/FoxyCart/foxyclient-php">FoxyClient PHP</a>.
 
+## See Also
+
+Along with this example code, we're also be adding to the <a href="https://github.com/FoxyCart/foxyclient-php-playground">playground</a> for more examples of how to use the client. It currently demonstrates how to work with coupons: https://github.com/FoxyCart/foxyclient-php-playground
+
 ## Installation
 Assume you're going to make the world a better place by improving software and fork the <a href="https://github.com/FoxyCart/foxyclient-php-example">foxyclient-php-example</a> repo.
 
