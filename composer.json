@@ -3,6 +3,12 @@
         "foxycart/foxyclient": "0.1.*",
         "riimu/kit-csrf": "2.*"
     },
+    "require-dev": {
+        "behat/behat": "^3.0",
+        "behat/mink": "^1.7",
+        "behat/mink-extension": "^2.1",
+        "behat/mink-goutte-driver": "~1.1"
+    },
     "repositories": [
         {
             "type": "package",
