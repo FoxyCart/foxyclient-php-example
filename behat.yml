@@ -1,0 +1,7 @@
+# Profile default : For JS enabled testing using Seleinum Server + FireFox
+default:
+  formatters:
+    pretty: true
+  extensions:
+      Behat\MinkExtension:
+        goutte: ~
