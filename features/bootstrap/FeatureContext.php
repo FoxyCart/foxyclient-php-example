@@ -35,21 +35,35 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
     private $new_user = 'example-user@example.com';
 
     /**
-     * @var string Email of existed user
+     * @var string Email of existing user
      */
-    private $old_user = 'existed-user@example.com';
+    private $old_user = 'existing-user@example.com';
 
     /**
-     * @var array Details of rhe new Foxy user you want to create
+     * @var array Details of the new Foxy user you want to create
      */
     private $user = [
         'first_name'=>'John',
         'last_name' => 'Doe',
-        'email' => 'johndoes@example.com',
+        'email' => 'johndoe@example.com',
         'phone' => '888888888',
         'is_developer' => true,
         'is_designer' => false,
         'is_merchant' => false
+    ];
+
+    /**
+     * @var array Details of the new Foxy Store you want to create
+     */
+    private $store = [
+        'store_name' => 'new behat test store',
+        'store_domain' => 'test',
+        'use_remote_domain' => false,
+        'store_url' => 'http://example.com/',
+        'store_email' => 'example@example.com',
+        'postal_code' => '37211',
+        'region' => 'TN',
+        'country' => 'US'
     ];
 
     /**
@@ -79,13 +93,26 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
     {
     }
 
+    public function getRandomEmail()
+    {
+        return 'johndoe_' . rand() . '@example.com';
+    }
+
+    public function getRandomStoreDomain()
+    {
+        return 'teststore-' . rand();
+    }
+
     /**
      * @AfterStep
      */
     public function failError(AfterStepScope $scope)
     {
         if (!$scope->getTestResult()->isPassed()) {
-            echo $this->getSession()->getPage()->find('css', '.alert-danger')->getText();
+            $filtered = $this->getSession()->getPage()->find('css', '.alert-danger');
+            if ($filtered) {
+                echo $filtered->getText();
+            }
         }
     }
 
@@ -95,6 +122,7 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
     public function iAmOnTheHomepage()
     {
         $this->visit($this->homepage);
+        $this->assertPageContainsText('SANDBOX');
     }
 
     /**
@@ -132,9 +160,6 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
      */
     public function iCheckIfTheANewUserAlreadyExists()
     {
-        $this->visit($this->homepage);
-        $this->iRegisterMyApplication();
-        $this->visit($this->homepage);
         $this->clickLink('Check if a Foxy user exists');
         $this->fillField('User Email Address', $this->new_user);
         $this->pressButton('Check User');
@@ -145,9 +170,6 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
      */
     public function iCheckIfAnOldUserAlreadyExists()
     {
-        $this->visit($this->homepage);
-        $this->iRegisterMyApplication();
-        $this->visit($this->homepage);
         $this->clickLink('Check if a Foxy user exists');
         $this->fillField('User Email Address', $this->old_user);
         $this->pressButton('Check User');
@@ -158,13 +180,10 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
      */
     public function iCreateAFoxyUser()
     {
-        $this->visit($this->homepage);
-        $this->iRegisterMyApplication();
-        $this->visit($this->homepage);
         $this->clickLink('Create a Foxy user');
         $this->fillField('First Name', $this->user['first_name']);
         $this->fillField('Last Name', $this->user['last_name']);
-        $this->fillField('Email', $this->user['email']);
+        $this->fillField('Email', $this->getRandomEmail());
         $this->fillField('Phone', $this->user['phone']);
         $this->checkOption('is_programmer');
         $this->pressButton('Create User');
@@ -183,9 +202,6 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
      */
     public function iCheckIfAnOldFoxyStoreAlreadyExist()
     {
-        $this->visit($this->homepage);
-        $this->iRegisterMyApplication();
-        $this->visit($this->homepage);
         $this->clickLink('Check if a Foxy store exists');
         $this->fillField('store_domain', $this->old_foxy_store_domain);
         $this->pressButton('Check Store');
@@ -196,11 +212,42 @@ class FeatureContext extends MinkContext implements Context, SnippetAcceptingCon
      */
     public function iCheckIfTheNewFoxyStoreAlreadyExist()
     {
-        $this->visit($this->homepage);
-        $this->iRegisterMyApplication();
-        $this->visit($this->homepage);
         $this->clickLink('Check if a Foxy store exists');
         $this->fillField('store_domain', $this->new_foxy_store_domain);
         $this->pressButton('Check Store');
+    }
+
+    /**
+     * @Given I return to the homepage
+     */
+    public function iReturnToTheHomepage()
+    {
+        $this->iAmOnTheHomepage();
+    }
+
+    /**
+     * @When I create a foxy store
+     */
+    public function iCreateAFoxyStore()
+    {
+        $this->iCreateAFoxyUser();
+        $this->iReturnToTheHomepage();
+        $this->clickLink('Create a Foxy store');
+        $this->fillField('Store Name', $this->store['store_name']);
+        $this->fillField('Store Domain', $this->getRandomStoreDomain());
+        $this->fillField('Store URL', $this->store['store_url']);
+        $this->fillField('Store Email', $this->store['store_email']);
+        $this->fillField('Store Postal Code', $this->store['postal_code']);
+        $this->fillField('Store Country', $this->store['country']);
+        $this->fillField('Store State', $this->store['region']);
+        $this->pressButton('Create Store');
+    }
+
+    /**
+     * @Then the store should be created successfully
+     */
+    public function theStoreShouldBeCreatedSuccessfully()
+    {
+        $this->assertPageContainsText('created successfully');
     }
 }
