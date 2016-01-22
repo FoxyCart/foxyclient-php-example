@@ -70,7 +70,7 @@ if ($action == '') {
         If you haven't already, please check out the <a href="https://api-sandbox.foxycart.com/docs">Foxy hAPI documentation</a> to better understand the purpose of this library.
     </p>
     <p>
-        This exmaple will walk through using FoxyClient.php to:
+        This example will walk through using FoxyClient.php to:
         <ol>
             <li><a href="/?action=register_client_form">Register your application</a> by creating an OAuth client</li>
             <li><a href="/?action=check_user_exists_form">Check if a Foxy user exists</a></li>
