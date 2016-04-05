@@ -10,24 +10,35 @@ use Foxy\FoxyClient\FoxyClient;
 
 /******* CONFIGURATION ********/
 /**
- * By default, use the sandbox.
+ * If you want to toy around in the sandbox, change this to true.
  */
 $config = array(
-    'use_sandbox' => true
+    'use_sandbox' => false
     );
 
 /**
- * Uncomment this if you want to register FoxyClient directly.
- * An example sandbox client is given below with a client_full_access scoped token.
+ * If you have already registered an OAuth client, you can add the client_id and client_secret below and uncomment these lines.
+ * This will keep your client logged in all the time. Otherwise, you can select the "Authenticate Client" link and add
+ * your values there to authenticate your client for this session only.
  */
-//$config['client_id'] = 'client_39KFJ83nyeDAQxxxLPCb';
-//$config['client_secret'] = 'H5QUsuHMjRmcV2LvZIMpRgPyHgZj1tqCs6sNuZrD';
-//$config['refresh_token'] = 'ce245fbc1d955ed320dfa27ccbfce90a5c2d8e07';
+//$config['client_id'] = '';
+//$config['client_secret'] = '';
+
 /**
- * If you happen to store the current access_token and time it has left before needing to be refreshed, you can pass that in also.
+ * If you already have an OAuth refresh token, add it below. Keep in mind, each token has a different scope such as
+ *    client_full_accesss (allowing you to modify your OAuth client and create a user)
+ *    user_full_accesss (allowing you to modify your user and create a store)
+ *    store_full_access (allowing you to modify your store and create new stores)
+ *
+ * Ideally, for this client example, you want to paste in refresh token that has the store_full_access scope for a store.
  */
-//$config['access_token'] = '818ea84b63a8873c9169ed62e88b6e8e6c200024';
-//$config['access_token_expires'] = '1428097039';
+//$config['refresh_token'] = '';
+
+/**
+ * If you happen to have the current access_token and time it has left before needing to be refreshed, you can pass that in also, otherwise a new token will automatically be obtained.
+ */
+//$config['access_token'] = '';
+//$config['access_token_expires'] = '';
 
 $guzzle_config = array(
     'defaults' => array(

@@ -3,37 +3,6 @@ require __DIR__ . '/bootstrap.php';
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
-?>
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Example Requests for the Foxy Hypermedia API</title>
-    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-    <style>
-        body { padding-bottom: 70px; }
-        footer { padding-top: 50px; }
-    </style>
-  </head>
-  <body>
-
-<nav class="navbar navbar-default">
-  <div class="container">
-    <a class="navbar-brand" href="/">Foxy hAPI Example</a>
-    <ul class="nav navbar-nav">
-      <li><a href="/?action=">Home</a></li>
-      <li><a target="_blank" href="https://api<?php print ($fc->getUseSandbox() ? '-sandbox' : ''); ?>.foxycart.com/hal-browser/browser.html">HAL Browser</a></li>
-      <li><a href="/?action=logout">Logout</a></li>
-    </ul>
-    <ul class="nav navbar-nav navbar-right">
-       <li><p class="navbar-text"><?php print ($fc->getUseSandbox() ? '<span class="text-success">SANDBOX</span>' : '<span class="text-danger">PRODUCTION</span>'); ?></p></li>
-    </ul>
-  </div>
-</nav>
-    <div class="container">
-<?php
-
 // update our session/client if needed.
 // NOTE: This example uses the session, but you could also be using a database or some other persistance layer.
 if (isset($_SESSION['access_token']) && $fc->getAccessToken() != $_SESSION['access_token']) {
@@ -62,6 +31,72 @@ if (isset($_SESSION['access_token_expires']) && $fc->getAccessTokenExpires() != 
     }
 }
 
+$fc->refreshTokenAsNeeded();
+
+// let's see if we have access to a store... if so, bookmark some stuff
+if ($fc->getAccessToken() != '') {
+    if (!isset($_SESSION['store_uri']) || $_SESSION['store_uri'] == ''
+        || !isset($_SESSION['store_name']) || $_SESSION['store_name'] == '') {
+        $result = $fc->get();
+        $store_uri = $fc->getLink('fx:store');
+        //$user_uri = $fc->getLink('fx:user');
+        //$client_uri = $fc->getLink('fx:client');
+        if ($store_uri != '') {
+            $_SESSION['store_uri'] = $store_uri;
+            $result = $fc->get($store_uri);
+            $errors = $fc->getErrors($result);
+            if (!count($errors)) {
+                $_SESSION['store_name'] = $result['store_name'];
+                $_SESSION['item_categories_uri'] = $result['_links']['fx:item_categories']['href'];
+                $_SESSION['coupons_uri'] = $result['_links']['fx:coupons']['href'];
+            }
+        //} elseif ($user_uri != '') {
+        //    $_SESSION['user_uri'] = $user_uri;
+        //} elseif ($client_uri != '') {
+        //    $_SESSION['client_uri'] = $client_uri;
+        }
+    }
+}
+
+?>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Example Requests for the Foxy Hypermedia API</title>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <style>
+        body { padding-bottom: 70px; }
+        footer { padding-top: 50px; }
+    </style>
+  </head>
+  <body>
+
+<nav class="navbar navbar-default">
+  <div class="container">
+    <a class="navbar-brand" href="/">Foxy hAPI Example</a>
+    <ul class="nav navbar-nav">
+      <li><a href="/?action=">Home</a></li>
+      <li><a target="_blank" href="https://api<?php print ($fc->getUseSandbox() ? '-sandbox' : ''); ?>.foxycart.com/hal-browser/browser.html">HAL Browser</a></li>
+        <?php
+        if (isset($_SESSION['store_name'])) {
+            ?>
+            <li class="divider"></li>
+            <li class="navbar-text">STORE: <?php print $_SESSION['store_name']; ?></li>
+            <?php
+        }
+        ?>
+      <li><a href="/?action=logout">Logout</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+       <li><p class="navbar-text"><?php print ($fc->getUseSandbox() ? '<span class="text-success">SANDBOX</span>' : '<span class="text-danger">PRODUCTION</span>'); ?></p></li>
+    </ul>
+  </div>
+</nav>
+    <div class="container">
+<?php
+
 // BEGIN HERE
 if ($action == '') {
     ?>
@@ -70,6 +105,30 @@ if ($action == '') {
         If you haven't already, please check out the <a href="https://api-sandbox.foxycart.com/docs">Foxy hAPI documentation</a> to better understand the purpose of this library.
     </p>
     <p>
+        <?php
+        if (isset($_SESSION['store_name'])) {
+        ?>
+        <p>
+            Coupons
+            <ol>
+                <li><a href="/?action=view_coupons">View Coupons</a></li>
+                <li>View Coupon (view coupons first)</li>
+                <li>Edit Coupon (view coupons first)</li>
+                <li>Delete Coupon (view coupons first)</li>
+                <li><a href="/?action=add_coupon_form">Add Coupon</a></li>
+            </ol>
+            Categories
+            <ol>
+                <li><a href="/?action=view_item_categories">View item categories</a></li>
+                <li>View Item Category (view item categories first)</li>
+                <li>Edit Item Category (view item categories first)</li>
+                <li>Delete Item Category (view item categories first)</li>
+                <li><a href="/?action=add_item_category_form">Add Item Category</a></li>
+            </ol>
+        </p>
+        <?php
+        } else {
+        ?>
         This example will walk through using FoxyClient.php to:
         <ol>
             <li><a href="/?action=register_client_form">Register your application</a> by creating an OAuth client</li>
@@ -80,13 +139,16 @@ if ($action == '') {
         </ol>
         OAuth Interactions:
         <ol>
-            <li><a href="/?action=authenticate_client_form">Authenticate</a> client</li>
-            <li><a href="/?action=client_credentials_grant">OAuth Client Credentials grant</a></li>
-            <li><a href="/?action=authorization_code_grant_form">OAuth Authorization Code grant</a></li>
+            <li><a href="/?action=authenticate_client_form">Authenticate</a> client (if you have a client_id, client_secret, and OAuth refresh_token and want to connect using those credentials)</li>
+            <li><a href="/?action=client_credentials_grant">OAuth Client Credentials grant</a> (if you want to use the client_id and client_secret to get the client_full_access scoped refresh token for modifying your client)</li>
+            <li><a href="/?action=authorization_code_grant_form">OAuth Authorization Code grant</a> (if you have a client_id and client_secret and you want to get access to your store or user)</li>
         </ol>
-    </p>
-    <?php
+        <?php
+        }
 }
+
+include 'includes/coupons.php';
+include 'includes/item_categories.php';
 
 
 if ($action == 'register_client') {
@@ -283,7 +345,6 @@ if ($action == 'authenticate_client') {
     <?php
     $errors = array();
     $required_fields = array(
-        'refresh_token',
         'client_id',
         'client_secret'
     );
@@ -355,7 +416,7 @@ if ($action == 'authenticate_client_form') {
             </div>
         </div>
         <div class="form-group">
-            <label for="access_token" class="col-sm-2 control-label">Refresh Token<span class="text-danger">*</span></label>
+            <label for="access_token" class="col-sm-2 control-label">Refresh Token</label>
             <div class="col-sm-3">
                 <input type="text" class="form-control" id="access_token" name="refresh_token" maxlength="200" value="<?php echo isset($_POST['refresh_token']) ? htmlspecialchars($_POST['refresh_token']) : ""; ?>">
             </div>
@@ -956,13 +1017,13 @@ if (isset($_SESSION['access_token_expires']) && $fc->getAccessTokenExpires() != 
     }
 }
 
-if ($action != 'logout' && $fc->getAccessToken() != '') {
+if ($action != 'logout' && $fc->getClientId() != '') {
     print '<footer class="text-muted">Authenticated: ';
     print '<ul>';
     print '<li>client_id: ' . $fc->getClientId() . '</li>';
-    print '<li>client_secret: (view source) <!--' . $fc->getClientSecret() . '--></li>';
+    print '<li>client_secret (select text to view): <span style="color:white">' . $fc->getClientSecret() . '</span></li>';
     print '<li>access_token: ' . $fc->getAccessToken() . '</li>';
-    print '<li>refresh_token: (view source) <!--' . $fc->getRefreshToken() . '--></li>';
+    print '<li>refresh_token (select text to view): <span style="color:white">' . $fc->getRefreshToken() . '</span></li>';
     if ($fc->getAccessTokenExpires() != '') {
         print '<li>access_token_expires: ' . $fc->getAccessTokenExpires() . '</li>';
         print '<li>now: ' . time() . '</li>';
