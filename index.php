@@ -460,11 +460,9 @@ if ($action == 'authorization_code_grant') {
     <h2>OAuth Authorization Code grant</h2>
     <h3>Code Steps:</h3>
     <ol>
-        <li>Request an access_token via Client Credentials grant <code>$fc->getAccessTokenFromClientCredentials();</code>.</li>
+        <li>Request an access_token using the Authorization Code <code>$fc->getAccessTokenFromAuthorizationCode($code);</code>.</li>
         <li>Check for errors.</li>
-        <li>Update FoxyClient access_token <code>$fc->setAccessToken($access_token);</code>.</li>
-        <li>Get the homepage <code>$fc->get();</code>.</li>
-        <li>Check for errors.</li>
+        <li>Update locally stored <code>access_token</code> and <code>refresh_token</code>.</li>
     </ol>
     <?php
     $errors = array();
@@ -503,9 +501,7 @@ if ($action == 'client_credentials_grant') {
     <ol>
         <li>Request an access_token via Client Credentials grant <code>$fc->getAccessTokenFromClientCredentials();</code>.</li>
         <li>Check for errors.</li>
-        <li>Update FoxyClient access_token <code>$fc->setAccessToken($access_token);</code>.</li>
-        <li>Get the homepage <code>$fc->get();</code>.</li>
-        <li>Check for errors.</li>
+        <li>Update locally stored <code>access_token</code> and <code>refresh_token</code>.</li>
     </ol>
     <?php
     $errors = array();
@@ -514,8 +510,6 @@ if ($action == 'client_credentials_grant') {
     if (!count($errors)) {
         $_SESSION['access_token'] = $result['access_token'];
         $_SESSION['access_token_expires'] = time() + $result['expires_in'];
-        $fc->setAccessToken($_SESSION['access_token']);
-        $fc->setAccessTokenExpires($_SESSION['access_token_expires']);
         ?>
         <h3 class="alert alert-success" role="alert">Access Token Obtained</h3>
         <h3>Result:</h3>
