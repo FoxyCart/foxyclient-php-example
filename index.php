@@ -86,8 +86,12 @@ if ($fc->getAccessToken() != '') {
             <li class="navbar-text">STORE: <?php print $_SESSION['store_name']; ?></li>
             <?php
         }
+        if ($fc->getClientId() != '') {
         ?>
-      <li><a href="/?action=logout">Logout</a></li>
+            <li><a href="/?action=logout">Logout</a></li>
+        <?php
+        }
+        ?>
     </ul>
     <ul class="nav navbar-nav navbar-right">
        <li><p class="navbar-text"><?php print ($fc->getUseSandbox() ? '<span class="text-success">SANDBOX</span>' : '<span class="text-danger">PRODUCTION</span>'); ?></p></li>
