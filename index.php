@@ -104,47 +104,49 @@ if ($action == '') {
     <p>
         If you haven't already, please check out the <a href="https://api-sandbox.foxycart.com/docs">Foxy hAPI documentation</a> to better understand the purpose of this library.
     </p>
-    <p>
-        <?php
-        if (isset($_SESSION['store_name'])) {
-        ?>
-        <p>
-            Coupons
-            <ol>
-                <li><a href="/?action=view_coupons">View Coupons</a></li>
-                <li>View Coupon (view coupons first)</li>
-                <li>Edit Coupon (view coupons first)</li>
-                <li>Delete Coupon (view coupons first)</li>
-                <li><a href="/?action=add_coupon_form">Add Coupon</a></li>
-            </ol>
-            Categories
-            <ol>
-                <li><a href="/?action=view_item_categories">View item categories</a></li>
-                <li>View Item Category (view item categories first)</li>
-                <li>Edit Item Category (view item categories first)</li>
-                <li>Delete Item Category (view item categories first)</li>
-                <li><a href="/?action=add_item_category_form">Add Item Category</a></li>
-            </ol>
-        </p>
-        <?php
-        } else {
-        ?>
-        This example will walk through using FoxyClient.php to:
-        <ol>
-            <li><a href="/?action=register_client_form">Register your application</a> by creating an OAuth client</li>
-            <li><a href="/?action=check_user_exists_form">Check if a Foxy user exists</a></li>
-            <li><a href="/?action=create_user_form">Create a Foxy user</a></li>
-            <li><a href="/?action=check_store_exists_form">Check if a Foxy store exists</a></li>
-            <li><a href="/?action=create_store_form">Create a Foxy store</a></li>
-        </ol>
-        OAuth Interactions:
-        <ol>
-            <li><a href="/?action=authenticate_client_form">Authenticate</a> client (if you have a client_id, client_secret, and OAuth refresh_token and want to connect using those credentials)</li>
-            <li><a href="/?action=client_credentials_grant">OAuth Client Credentials grant</a> (if you want to use the client_id and client_secret to get the client_full_access scoped refresh token for modifying your client)</li>
-            <li><a href="/?action=authorization_code_grant_form">OAuth Authorization Code grant</a> (if you have a client_id and client_secret and you want to get access to your store or user)</li>
-        </ol>
-        <?php
-        }
+    <?php
+    if (isset($_SESSION['store_name'])) {
+    ?>
+    <p>The following are examples of interacting with the Hypermedia API using the FoxyClient PHP library to perform CRUD operations on store elements. This is just a subset of what is possible with the API and is provided to give a practical overview of how it can function.</p>
+    <h3>Store: <?php print $_SESSION['store_name']; ?></h3>
+    <h4>Coupons</h4>
+    <ul>
+        <li><a href="/?action=view_coupons">View all coupons</a></li>
+        <li><a href="/?action=add_coupon_form">Add a new coupon</a></li>
+    </ul>
+    <h4>Categories</h4>
+    <ul>
+        <li><a href="/?action=view_item_categories">View all item categories</a></li>
+        <li><a href="/?action=add_item_category_form">Add a new item category</a></li>
+    </ul>
+    <?php
+    } else {
+    ?>
+    <h3>Getting started</h3>
+    <p>The Foxy Hypermedia API uses OAuth 2.0 to authenticate access, so to make use of this example set up, you first need to create an OAuth Integration client. There are two ways you can go about this:</p>
+
+    <h4>Quick start</h4>
+    <p>If you want to jump in and play with the API rather than stepping through creating a client, user and store manually, you can quickly set up an integration for an existing FoxyCart store. Simply log in to your <a href="https://admin.foxycart.com" target="_blank">FoxyCart store administration</a>, navigate to the "Integrations" page and click the "Get Token" button. After you specify a name for your integration, you'll be presented with the <code>client_id</code>, <code>client_secret</code> and <code>refresh_token</code> you'll need to access that store using the API. To connect that newly created client into this example code, use the "Authenticate client" option in the below "OAuth Interactions".</p>
+
+    <h4>Manual steps</h4>
+    <p>You can also run through each step manually - creating a client through the API, and then manually creating a user and store as well. Follow the steps below for doing that.</p>
+    <p>Alternatively, you can also just complete step 1 below to create an OAuth Integration client, and then use the "OAuth Authorization Code Grant" to connect this new client to your existing FoxyCart user or store.</p>
+    <ol>
+        <li><a href="/?action=register_client_form">Register your application</a> by creating an OAuth client</li>
+        <li><a href="/?action=check_user_exists_form">Check if a Foxy user exists</a></li>
+        <li><a href="/?action=create_user_form">Create a Foxy user</a></li>
+        <li><a href="/?action=check_store_exists_form">Check if a Foxy store exists</a></li>
+        <li><a href="/?action=create_store_form">Create a Foxy store</a></li>
+    </ol>
+
+    <h3>OAuth Interactions</h3>
+    <ul>
+        <li><a href="/?action=authenticate_client_form">Authenticate client</a><br/>If you have a <code>client_id</code>, <code>client_secret</code>, and OAuth <code>refresh_token</code> and want to connect using those credentials</li>
+        <li><a href="/?action=client_credentials_grant">OAuth Client Credentials grant</a><br/>If you want to use the <code>client_id</code> and <code>client_secret</code> to get the <code>client_full_access</code> scoped refresh token for modifying your client</li>
+        <li><a href="/?action=authorization_code_grant_form">OAuth Authorization Code grant</a><br/>If you have a <code>client_id</code> and <code>client_secret</code> and you want to get access to your store or user</li>
+    </ul>
+    <?php
+    }
 }
 
 include 'includes/coupons.php';
