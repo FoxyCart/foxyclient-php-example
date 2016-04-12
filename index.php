@@ -68,7 +68,7 @@ if ($fc->getAccessToken() != '') {
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <style>
         body { padding-bottom: 70px; }
-        footer { padding-top: 50px; }
+        footer { padding-top: 50px; clear:both; }
     </style>
   </head>
   <body>
