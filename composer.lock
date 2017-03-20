@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "d3132652e5a0dac4adc035373d18fd36",
+    "content-hash": "75eeee027a8a0d45291387e02cf1b8dc",
     "packages": [
         {
             "name": "foxycart/foxyclient",
-            "version": "0.1.0",
+            "version": "2.0.0",
             "source": {
                 "type": "git",
                 "url": "git@github.com:FoxyCart/foxyclient-php.git",
-                "reference": "master"
+                "reference": "2.0.0"
             },
             "require": {
                 "guzzlehttp/guzzle": "~6.2",
