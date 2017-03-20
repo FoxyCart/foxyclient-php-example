@@ -1,6 +1,6 @@
 {
     "require": {
-        "foxycart/foxyclient": "0.1.*",
+        "foxycart/foxyclient": "2.*",
         "riimu/kit-csrf": "2.*"
     },
     "require-dev": {
@@ -18,7 +18,7 @@
                 "description": "FoxyClient - a PHP Guzzle based API Client for working with the Foxy Hypermedia API ",
                 "type": "library",
                 "homepage": "https://github.com/FoxyCart/foxyclient-php",
-                "version": "0.1.0",
+                "version": "2.0.0",
                 "source": {
                     "url": "git@github.com:FoxyCart/foxyclient-php.git",
                     "type": "git",
