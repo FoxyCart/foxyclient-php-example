@@ -5,7 +5,8 @@ date_default_timezone_set('America/Los_Angeles');
 session_start();
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Subscriber\Cache\CacheSubscriber;
+use GuzzleHttp\HandlerStack;
+use Kevinrob\GuzzleCache\CacheMiddleware;
 use Foxy\FoxyClient\FoxyClient;
 
 /******* CONFIGURATION ********/
@@ -40,18 +41,21 @@ $config = array(
 //$config['access_token'] = '';
 //$config['access_token_expires'] = '';
 
+// Create default HandlerStack
+$stack = HandlerStack::create();
+
+// Add this middleware to the top with `push`
+$stack->push(new CacheMiddleware(), 'cache');
+
 $guzzle_config = array(
-    'defaults' => array(
-        'debug' => false,
-        'exceptions' => false
-        )
+    'debug' => false,
+    'handler' => $stack
     );
 
 /**
  * Set up our Guzzle Client
  */
 $guzzle = new Client($guzzle_config);
-CacheSubscriber::attach($guzzle);
 
 /**
  * Get our FoxyClient
