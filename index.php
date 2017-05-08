@@ -50,6 +50,7 @@ if ($fc->getAccessToken() != '') {
                 $_SESSION['item_categories_uri'] = $result['_links']['fx:item_categories']['href'];
                 $_SESSION['coupons_uri'] = $result['_links']['fx:coupons']['href'];
                 $_SESSION['transactions_uri'] = $result['_links']['fx:transactions']['href'];
+                $_SESSION['subscriptions_uri'] = $result['_links']['fx:subscriptions']['href'];
             }
         //} elseif ($user_uri != '') {
         //    $_SESSION['user_uri'] = $user_uri;
@@ -114,6 +115,11 @@ if ($action == '') {
     ?>
     <p>The following are examples of interacting with the Hypermedia API using the FoxyClient PHP library to perform CRUD operations on store elements. This is just a subset of what is possible with the API and is provided to give a practical overview of how it can function.</p>
     <h3>Store: <?php print $_SESSION['store_name']; ?></h3>
+    <h4>Subscriptions</h4>
+    <ul>
+        <li><a href="/?action=view_subscriptions_as_csv">View all subscriptions as CSV</a></li>
+    </ul>
+
     <h4>Transactions</h4>
     <ul>
         <li><a href="/?action=view_transactions">View all transactions</a></li>
@@ -161,7 +167,7 @@ if ($action == '') {
 include 'includes/coupons.php';
 include 'includes/item_categories.php';
 include 'includes/transactions.php';
-
+include 'includes/subscriptions.php';
 
 if ($action == 'register_client') {
     ?>
