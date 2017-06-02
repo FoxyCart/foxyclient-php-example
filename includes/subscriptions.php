@@ -2,9 +2,10 @@
 
 function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
     $header = '"sub_token_url","customer_id","email","start_date","next_transaction_date","end_date","frequency","past_due_amount",';
-    $header .= '"billing_first_name","billing_last_name","billing_company","billing_address1","billing_city","billing_region","billing_postal_code","billing_country",';
-    $header .= '"item_name","price","quantity","item_options",';
-    $header .= '"shipping_first_name","shipping_last_name","shipping_company","shipping_address1","shipping_city","shipping_region","shipping_postal_code","shipping_country"';
+    $header .= '"first_failed_transaction_date","last_transaction_date","total_item_price","total_tax","total_shipping","total_future_shipping","discount_amount","total_order","coupons_used",';
+    $header .= '"billing_first_name","billing_last_name","billing_company","billing_address1","billing_address2","billing_city","billing_region","billing_postal_code","billing_country",';
+    $header .= '"item_name","price","quantity","item_options","item_code","category_code",';
+    $header .= '"shipping_first_name","shipping_last_name","shipping_company","shipping_address1","shipping_address2","shipping_city","shipping_region","shipping_postal_code","shipping_country"';
     $header .= "\n";
     $csv_header = '';
     $csv_detail = '';
@@ -13,7 +14,7 @@ function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
     }
     $limit = 300;
     $params = array(
-        'zoom' => 'customer:default_billing_address,last_transaction:shipments,transaction_template,transaction_template:items,transaction_template:items:item_options',
+        'zoom' => 'customer:default_billing_address,last_transaction:shipments,transaction_template,transaction_template:items,transaction_template:items:item_options,transaction_template:items:item_category,last_transaction:discounts',
         'is_active' => 1,
         'offset' => $offset,
         'limit' => $limit,
@@ -21,9 +22,10 @@ function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
     $result = $fc->get($subs_uri,$params);
     foreach($result['_embedded']['fx:subscriptions'] as $subscription) {
         $transaction_template = $subscription['_embedded']['fx:transaction_template'];
+        $last_transaction = $subscription['_embedded']['fx:last_transaction'];
         $customer = $subscription['_embedded']['fx:customer'];
         $billing_address = $customer['_embedded']['fx:default_billing_address'];
-        $shipments = $subscription['_embedded']['fx:last_transaction']['_embedded']['fx:shipments'];
+        $shipments = $last_transaction['_embedded']['fx:shipments'];
         $items = array();
         foreach($transaction_template['_embedded']['fx:items'] as $item) {
             $items[] = $item;
@@ -36,10 +38,29 @@ function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
         $csv_header .= '"' . $subscription['end_date'] . '",';
         $csv_header .= '"' . $subscription['frequency'] . '",';
         $csv_header .= '"' . $subscription['past_due_amount'] . '",';
+        $csv_header .= '"' . $subscription['first_failed_transaction_date'] . '",';
+        $csv_header .= '"' . $last_transaction['transaction_date'] . '",';
+        $csv_header .= '"' . $last_transaction['total_item_price'] . '",';
+        $csv_header .= '"' . $last_transaction['total_tax'] . '",';
+        $csv_header .= '"' . $last_transaction['total_shipping'] . '",';
+        $csv_header .= '"' . $last_transaction['total_future_shipping'] . '",';
+        $discount_amount = 0;
+        $discount_codes = '';
+        if (isset($last_transaction['_embedded']['fx:discounts'])) {
+            foreach ($last_transaction['_embedded']['fx:discounts'] as $discount) {
+                $discount_amount += $discount['amount'];
+                $discount_codes .= $discount['code'] . '|||';
+            }
+        }
+        $discount_codes = trim($discount_codes,'|||');
+        $csv_header .= '"' . $discount_amount . '",';
+        $csv_header .= '"' . $last_transaction['total_order'] . '",';
+        $csv_header .= '"' . $discount_codes . '",';
         $csv_header .= '"' . $billing_address['first_name'] . '",';
         $csv_header .= '"' . $billing_address['last_name'] . '",';
         $csv_header .= '"' . $billing_address['company'] . '",';
         $csv_header .= '"' . $billing_address['address1'] . '",';
+        $csv_header .= '"' . $billing_address['address2'] . '",';
         $csv_header .= '"' . $billing_address['city'] . '",';
         $csv_header .= '"' . $billing_address['region'] . '",';
         $csv_header .= '"' . $billing_address['postal_code'] . '",';
@@ -58,8 +79,10 @@ function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
             $csv_detail .= '"' . $item['name'] . '",';
             $csv_detail .= '"' . $item_price . '",';
             $csv_detail .= '"' . $item['quantity'] . '",';
-            $item_options = trim($item_options,'|');
+            $item_options = trim($item_options,'|||');
             $csv_detail .= '"' . $item_options . '",';
+            $csv_detail .= '"' . $item['code'] . '",';
+            $csv_detail .= '"' . $item['_embedded']['fx:item_category']['code'] . '",';
             $shipping_address = '';
             foreach ($shipments as $shipment) {
                 if ($shipment['address_name'] == $item['shipto'] && $shipping_address == '') {
@@ -67,6 +90,7 @@ function printSubscriptionsAsCSV($fc, $subs_uri, $offset = 0) {
                     $shipping_address .= '"' . $shipment['last_name'] . '",';
                     $shipping_address .= '"' . $shipment['company'] . '",';
                     $shipping_address .= '"' . $shipment['address1'] . '",';
+                    $shipping_address .= '"' . $shipment['address2'] . '",';
                     $shipping_address .= '"' . $shipment['city'] . '",';
                     $shipping_address .= '"' . $shipment['region'] . '",';
                     $shipping_address .= '"' . $shipment['postal_code'] . '",';
